@@ -1087,7 +1087,7 @@ def nist_column_post_process(
     wbar = 12.725 # measured gauge length of width axtensometer
     ldisp0 = l_disp[0]
     wdisp0 = w_disp[0]
-    
+
     ############################################################
     ## remove the triangle (following Adam Creuziger)
     ## find dload/ext < 0
@@ -1138,7 +1138,7 @@ def nist_column_post_process(
     sig_engi = force / area  #N/mm^2 = N/m^2 / 10^-6 = 10^6 Pa = MPa
     sig = sig_engi * (1 + engie)  # S = s * (einge + 1) #true stress
     ## True stress
-    
+
     ## modulus (tangent of the slope unless given)
     mod = slope(x=le, y=sig, upy=us, lowy=ls)
     if echo: print '%50s %5.3f [GPa]'%(
@@ -1151,13 +1151,11 @@ def nist_column_post_process(
     for i in range(len(le)): #true axial strain
         if modulus!=None:
             temp = le[i] - sig[i]/modulus
-            pass
         else:
             temp = le[i] - sig[i]/mod
-            pass
         if temp<0: E_pl.append(0.)
         else: E_pl.append(temp)
-        pass
+
 
     E_pl = np.array(E_pl)
     ## ----------------------------------------
@@ -1452,6 +1450,9 @@ def nist_column_post_process(
     fig.savefig('e-time_%s.pdf'%datafile.split('.')[0])
 
     return FlowStress_lowe, FlowStress_upe, R_lowe, R_upe, r_15pct_acc, InstRMean, InstRSTDV, InstRslope,ys_offset_fromTotalstrain,ys_offset_fromPlasticstrain
+
+
+
 
 
 class pp_plot:
