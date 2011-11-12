@@ -518,7 +518,9 @@ def mts_column_post_process(
 
 
 def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, mod=None):
-    """ post process of a series of in-plane tensile tests
+    """ Post process of a series of in-plane tensile tests
+
+    Files from glob.glob('*.csv') are under process.
     
     Arguments
     =========
@@ -526,9 +528,9 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
       ifig = 92
       order = 3
       epsl = 0.05
-      epsu
-      delt
-      mod
+      epsu = 0.10
+      delt = 10
+      mod  = None
     """
     import glob
     import matplotlib.pyplot as plt
@@ -541,7 +543,7 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
         else: angles.append(temp)
         pass
     angles.sort()
-    
+
     #mapping... into integers.
     angles = map(int, angles)
 
@@ -552,7 +554,7 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
     figYS1  = plt.figure(ifig+4)
     figYS2  = plt.figure(ifig+5)
     figYSn  = plt.figure(ifig+6)
-    
+
     #figR15.clf()
     figR15a.clf()
     figIR.clf()
@@ -560,7 +562,7 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
     figYS1.clf()
     figYS2.clf()
     figYSn.clf()
-    
+
     #axR15  = figR15.add_subplot(111)
     axR15a = figR15a.add_subplot(111)
     axIR   = figIR.add_subplot(111)
@@ -573,15 +575,12 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
     dang = abs(angles[1]-angles[0])
     ang_off = dang/5.
 
-
-
     ys1_mast = []; ys1_err = []
     ys2_mast = []; ys2_err = []
     ysl_mast = []; ysl_err = []
     ysu_mast = []; ysu_err = []
     ys1nl, ys2nl, yslnl, ysunl  = [], [], [], []
-    
-    
+
     ## angles include available angles 
     for i in range(len(angles)):
         print 'current angle: %i'%angles[i]
@@ -600,24 +599,22 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
         ## Yield stress to be used for
         # normalization w.r.t result along 0
 
-        
-
         for j in range(len(FilesForThisAngle)):
             ## getting one value parameters from nist_column_post_process.
             rst = nist_column_post_process(
                 datafile=FilesForThisAngle[j], echo=False, delt=delt, modulus=mod
                 )
-            
+
             # r15,
             sig_lowe, sig_upe, r_lowe, r_upe, r15acc, InstRMean, InstRSTDV, InstRslope = rst[0:8]
             ys_Teps, ys_Peps = rst[8:] #yield stress
 
             # axR15.plot(angles[i],r15, 'o', mfc='None', mec='black')
             axR15a.plot(angles[i], r15acc,'o', mfc='None', mec='black')
-            
+
             axIR.errorbar(angles[i],InstRMean,yerr=InstRSTDV,color='grey',
                           fmt='o', mfc='None', mec='black', ls='--')
-            
+
             axIR.plot(angles[i] - ang_off, r_lowe, 'o', mfc='None', mec='blue')
             axIR.plot(angles[i] + ang_off, r_upe,  'o', mfc='None', mec='green')
             # axIR.plot(angles[i],InstRMean,'o', mfc='None', mec='black')
@@ -632,10 +629,10 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
             axYS2.plot(angles[i] - ang_off,ys_Teps,'o', mfc='None', mec='black')            
             axYS2.plot(angles[i], ys_Peps,         'o', mfc='None', mec='black')
             axYS2.plot(angles[i] + ang_off,sig_upe,'o', mfc='None', mec='green')            
-            
+
             ## list
             # r15l.append(r15)
-            
+
             r15accl.append(r15acc)
             InstRMeanl.append(InstRMean)
             InstRslopel.append(InstRslope)
@@ -647,7 +644,7 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
                 yslnl.append(sig_lowe)
                 ysunl.append(sig_upe)
                 pass
-            
+
             # yield stress and r value at the low and up prescribed strains
             siglowel.append(sig_lowe)
             sigupel.append(sig_upe)
@@ -668,15 +665,14 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
         SIGU = np.array(sigupel).mean()
         R_LOWE = np.array(r_lowel).mean()
         R_UPE  = np.array(r_upel).mean()
-        
+
         # master yield stresses
         ys1_mast.append(YS1)
         ys2_mast.append(YS2)
         ysu_mast.append(SIGU)
         ysl_mast.append(SIGL)
 
-        
-        
+
         # standard deviation
         if len(FilesForThisAngle)>1 :
             #axR15.errorbar( angles[i],R15,fmt='+', yerr=np.std(r15l),           color='red')
@@ -723,16 +719,15 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
     else: ang1 = max(angles) + d
     if max(angles)>=090.: fin = max(angles) + d
     else: fin = max(angles)    
-    
 
     ## normalized in-plane yield stress variation.
     ys1n = np.array(ys1nl).mean()
     ys2n = np.array(ys2nl).mean()
     ysln = np.array(yslnl).mean()
     ysun = np.array(ysunl).mean()
-    
+
     angles = np.array(angles) # numpy the angles list
-    
+
     axYSn.errorbar(angles- 1.5*d/8., ys1_mast/ys1n, yerr=ys1_err/ys1n, fmt='o', label=r'$\sigma^{YS}_1$')
     axYSn.errorbar(angles- 0.5*d/8., ys2_mast/ys2n, yerr=ys2_err/ys2n, fmt='o', label=r'$\sigma^{YS}_2$')
     axYSn.errorbar(angles+ 0.5*d/8., ysl_mast/ysln, yerr=ysl_err/ysln, fmt='o', label=r'$\bar{\sigma^{YS}}_l$')
@@ -743,7 +738,6 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
     figYSn.savefig('YS_norm.pdf')
     axYSn.set_ylim(0.,)
     figYSn.savefig('YS_norm_rescale.pdf')
-    
 
     #axR15.set_xlim(ang0,ang1)
     axR15a.set_xlim(ang0,ang1)
@@ -752,14 +746,13 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
     axYS1.set_xlim(ang0,ang1)
     axYS2.set_xlim(ang0,ang1)
 
-    
     #axR15.set_xticks(np.arange(0,max(angles)*1.01,30.))
     axR15a.set_xticks(np.arange(0,fin*1.01,30.))
     axIR.set_xticks(np.arange(0,fin*1.01,30.))
     axIRS.set_xticks(np.arange(0,fin*1.01,30.))
     axYS1.set_xticks(np.arange(0,fin*1.01,30.))
     axYS2.set_xticks(np.arange(0,fin*1.01,30.))
-    
+
     #axR15.set_ylabel('R15')
     axR15a.set_ylabel('R15a')
     axIR.set_ylabel(r'$\bar{R}^{inst}$')
@@ -771,7 +764,7 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
     axIR.set_xlabel(r'$\theta$')
     axYS1.set_xlabel(r'$\theta$')
     axYS2.set_xlabel(r'$\theta$')
-    
+
     #figR15.savefig('figR15.pdf')
     figR15a.savefig('figR15a.pdf')
     figIR.savefig('figIR.pdf')
@@ -786,7 +779,6 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
     figYS2.savefig('figYS2_rescale.pdf')
     pass
     # sorting multiple tensile bars for an angle
-
 
 def polynomial_fitting_hr_recursive(
     hr, strain, lower_window=0.03, upper_window=0.10,
@@ -1067,22 +1059,22 @@ def nist_column_post_process(
     import os
     plt.ioff()
     path = os.getcwd()
-    ##
+
     if echo: print 'filename =%s'%datafile
-        
+
     f = open(path + os.sep + datafile, 'r')
     header = f.readlines()[:nhead]; f.close()
-    
+
     tmpa, tmpb = map(float,header[-1].split(','))
-    
+
     if W0==None: W0 = tmpa
     if t==None: t = tmpb
     if t>W0:
         print 'suspicious dimension found in'
         raise IOError, datafile
-    
+
     data = np.loadtxt(path+os.sep+datafile, skiprows=nhead, delimiter=delimt).T
-    
+
     time = data[0] #[s]
     ext = data[1] #[mm]
     force = data[2] #[N]
@@ -1166,7 +1158,7 @@ def nist_column_post_process(
         if temp<0: E_pl.append(0.)
         else: E_pl.append(temp)
         pass
-    
+
     E_pl = np.array(E_pl)
     ## ----------------------------------------
 
@@ -1187,7 +1179,7 @@ def nist_column_post_process(
         E_pl=E_pl, delt=delt, wrk = wrk
         )
     ## 
-    
+
     ## illustration of the estimation on the uniform deformation trimming
     fig = plt.figure(ifig)
     fig.clf() ; ax=fig.add_subplot(111)
@@ -1207,14 +1199,14 @@ def nist_column_post_process(
     # # dsig/deps =  A * n eps**(n-1)         #
     lower_window = 0.05; upper_window=0.10
     ###########################################
-    
+
     ## true stress-strain fitting
     sigp, hrp, A, exponent = polynomial_fitting(
         strain=le.copy(), stress=sig.copy(),
         lower_window=lower_window,
         upper_window=upper_window
         )
-    
+
     ## find where dsig/deps = sig
     ## fit the True flow curve
     trim_index= 2500
@@ -1225,7 +1217,7 @@ def nist_column_post_process(
                 print 'strain up to %5.2f'%le[i]
             break
         pass
-    
+
     ## --------------------------------------------------
     ax.plot(le[::10], sigp[::10], '--', label=r'$A\varepsilon^n$', mfc='None')
     ax.plot(le[::10],  hrp[::10], '--', label=r'$A n \varepsilon^{n-1}$')
@@ -1236,7 +1228,7 @@ def nist_column_post_process(
         lower_window=lower_window,
         upper_window=upper_window,
         )
-    
+
     ax.plot(engie[::10], sigp[::10], '-.', label=r'$A\epsilon^n$ ', mfc='None')
     ax.plot(engie[::10],  hrp[::10], '-.', label=r'$A n \epsilon^{n-1}$')
 
@@ -1246,7 +1238,7 @@ def nist_column_post_process(
     # fitting 1: d(sig)/d(eps) fitting
     # using ln(hr) = a ln(eps) + b --- > it does not touch the 'hr = 0' horizontal line.
     # hrp = polynomial_fitting_hr(hr=HR, strain=le,lower_window=0.10, upper_window=0.15)
-    
+
     # fitting 2: recursive polynomial fitting order = 3 and returns the upper_strain limit...
     ## it turns out to be very unstable. So I put in within 'try, and except'
     try:
@@ -1286,7 +1278,7 @@ def nist_column_post_process(
     ax.set_ylim(0., ylimh)    
     fig.savefig('%s_sig_hr.pdf'%datafile.split('.csv')[0])
     fig.clf()
-    
+
     ### Determination of uniform strain ends here.
     ####################################################
 
@@ -1294,7 +1286,7 @@ def nist_column_post_process(
         print 'trim_index', trim_index
         print 'estimated uniform strain: %5.2f'%le[trim_index]
         pass
-    
+
     le = le[:trim_index]
     we = we[:trim_index]
     te = te[:trim_index]
@@ -1340,7 +1332,7 @@ def nist_column_post_process(
                 lind=i-1
                 break
         pass
-        
+
     # uind
     if max(le)< upe:
         print 'max(le)< upe'
@@ -1357,7 +1349,7 @@ def nist_column_post_process(
     r_15pct_acc = we[uind]/te[uind]
     if echo: print '%50s %5.3f'%(
         'Accummulated r value upto 15pct:',r_15pct_acc)
-    
+
     # 5~15 pct (or best uniform strain)
     ## Instantaneous mean R-value
     R5_15 = np.array(R[lind:uind])
@@ -1395,7 +1387,7 @@ def nist_column_post_process(
             index=i
             break
         pass
-    
+
     # interpolatation
     y0 = sig[index-1]
     y1 = sig[index]
@@ -1411,6 +1403,7 @@ def nist_column_post_process(
             index = i
             break
         pass
+
     y0 = sig[index-1]
     y1 = sig[index]
     x0 = E_pl[index-1]
@@ -1419,7 +1412,7 @@ def nist_column_post_process(
     if echo:
         print '%50s %5.3f [MPa]'%('Plastic strain 0.2pct offset yield strength:',ys)
     ys_offset_fromPlasticstrain = ys
-    
+
     ## save figures....
     R = np.array(R); SR = np.array(SR); HR = np.array(HR)
     fig = plt.figure(ifig)
@@ -1430,7 +1423,7 @@ def nist_column_post_process(
     ax.set_ylabel(r'$\sigma$ [MPa]')
     ax.set_xlim(-0.01,)
     fig.savefig('str-epl_%s.pdf'%datafile.split('.')[0])
-    
+
     fig = plt.figure(ifig)
     fig.clf()
     ax = fig.add_subplot(111)
@@ -1457,10 +1450,9 @@ def nist_column_post_process(
     ax = fig.add_subplot(111)
     ax.plot(time[::10],le[::10], 'o', mfc='None')
     fig.savefig('e-time_%s.pdf'%datafile.split('.')[0])
-    
+
     return FlowStress_lowe, FlowStress_upe, R_lowe, R_upe, r_15pct_acc, InstRMean, InstRSTDV, InstRslope,ys_offset_fromTotalstrain,ys_offset_fromPlasticstrain
-    
-    
+
 
 class pp_plot:
     def __init__(self, ifig, delt):
