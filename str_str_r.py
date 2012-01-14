@@ -1,8 +1,5 @@
-import os
-#os.sys.path.append('c:\\python26\\myworkplace\\myscripts')
-import math
+import os, math, glob
 import matplotlib.pyplot as plt
-import glob
 import numpy as np
 import scipy.integrate as integrate
 
@@ -25,9 +22,8 @@ iforce = 1
 iwid = 2
 """
 
-def avg():
-    """
-    Input through raw_input and average the values
+def __avg__():
+    """ Input through raw_input and average the values
     """
     rst = []
     while True:
@@ -38,36 +34,76 @@ def avg():
     return np.array(rst).mean()
 
 def avgarea():
-    """
-    Call def avg to input thickness and areas' mean values
+    """ Call def avg to input thickness and areas' mean values
     """
     while True:
         print 'Input thicknesses'
-        t = avg()
+        t = __avg__()
         print 'Input areas'
-        a = avg()
+        a = __avg__()
         print 'Average areas: ', t * a
         flag = raw_input('type any than blank if you want to exit')
         if len(flag)==0: break
         pass
-            
         
+
 def param(ifile=False, filename='str_str_r.inp', mode=None):
     """
+    param definition gives certain parameters
+
     thickness, L0(gauge length), W0(transverse width), ifor_str, unit,
+    If ifile is True, variables are read from the file whose name is
+    given as the filename argument.
+
+    mode (case insensitive)
+      MTS or NIST
+      * MTS is the one at GIFT
+
+    Internal variables
+      * t        : thickness of the sample
+      * L0       : Gauge length
+      * W0       : Transverse width of the sample
+      * ifor_str : either 'force' or 'stress'
+      * unit     : Force unit 'kN' or 'N'
+      * delt     : Bin size
+      * ls       : Lower stress (default=10 MPa)
+      * us       : Upper stress (default=80 MPa)
+
+    Returns t, L0, W0, area, ls, us, delt, ifor_str, unit
+
+    Defaults of the NIST case:
+      * ifor_str='force' : ifor_str is either 'force' or 'stress'
+      * unit='N'
+    Defaults of the MTS case:
+      * 
     """
-    if mode=='MTS': print 'MTS mode'
+    if mode==None: raise IOError, 'No mode is given.'
+
+    if mode!=None and type(mode).__name__=='str':
+        print '*** %s mode ***'%mode
+
     if ifile ==False:
+        ## thickness
         t = raw_input('Thickness of the sample, (default = 0.42) >>')
+        ## Gauge length
         L0 = raw_input('Extension Gauge length (default = 50[mm]) >>')
+        ## Sample's transverse width
         W0 = raw_input('Transverse width of the sample (default = 12.5) >>')
-        if mode=='MTS': ifor_str='force'
-        elif mode=='nist' or mode=='NIST':  ifor_str='force'
+
+        # Depending on the controlling software of the system, 
+        # it may provide either force or engineering stress
+        if mode.upper()=='MTS': ifor_str='force'
+        elif mode.upper()=='NIST':  ifor_str='force'
         else: ifor_str = raw_input("Force or stress ('force' or 'stress'>> ")
-        
-        if mode=='MTS': unit='kN'
-        elif mode=='nist' or mode=='NIST': iunit='N'
+
+        ## Force unit should be either 'kN' or 'N'
+        if mode.upper()=='MTS':
+            unit='kN'; print 'unit [%s]'%unit
+        elif mode.upper()=='NIST':
+            unit='N'; print 'unit [%s]'%unit
         else: unit = raw_input("Unit of load (N or kN: default is 'kN') >>> ")
+
+        
         delt = raw_input('Bin size for slope calc (R, SR, HR, default=20) >>')
         print '\nInput Low and up stress from which the slope is calculated'
         ls = raw_input('Lower stress (default=10 MPa)')
@@ -119,6 +155,7 @@ def column(ifile=False, filename='str_str_r.inp'):
     Read column data (5 coloums from MTS)
 
     ---> seems to be buggy. It has to be modified. (2011, Oct 11)
+    column is now only used for MTS.
     """
     if ifile==False:
         ## whether the axial input is strain or extension
@@ -172,7 +209,6 @@ def column(ifile=False, filename='str_str_r.inp'):
         return tmp_[1], tmp_[2], tmp_[3], tmp_[4], tmp_[0]
     raise IOError, 'unexpected case'
 
-
 def delimiter():
     """
     delimiter decl.
@@ -182,7 +218,6 @@ def delimiter():
         delimt =','
     print 'The given delimiter is ', delimt
     return delimt
-
 
 def slope(x, y, upy, lowy):
     """
@@ -227,6 +262,7 @@ def __slope__(x, y):
     z = np.polyfit(x,y,1)
     return z[0]
 
+
 """
 t = 0.42 # unit: mm
 L0 = 50.  # unit: mm
@@ -237,7 +273,7 @@ a = t * L0 # unit: mm^2
 
 def pp(mode='MTS'):
     """
-    post-process the uniaxial tension tests
+    Post-process the uniaxial tension tests
     """
     ## which raw data file and where?
     path = raw_input('Path or Enter(current working directory)  >>')
@@ -282,14 +318,14 @@ def pp(mode='MTS'):
         # only effetive when ifile is True
         t,L0,W0,area,ls,us,delt,ifor_str,unit = param(ifile = ifile,mode=mode)
 
-        if mode=='nist' or mode=='NIST': pass #skip
+        if mode.upper()=='NIST': pass #skip
         else:
             ## column position determination
             itime, iext, ifor, iwid, switch = column(ifile=ifile)
             delimt = delimiter()
             ## 
-            if unit == 'kN': coef=1.
-            elif unit =='N': coef=1e-3
+            if unit=='kN': coef = 1.
+            elif unit=='N': coef = 1e-3
             else:
                 print 'be causeful with the unit in the file'
                 raw_input('please press the enter')
@@ -299,7 +335,7 @@ def pp(mode='MTS'):
         pass
 
     for i in range(len(files)):
-        if mode=='nist':
+        if mode.upper()=='NIST':
             nist_column_post_process(
                 datafile=files[i],
                 t=t, L0=L0, W0=W0,
@@ -326,8 +362,6 @@ def pp(mode='MTS'):
 
         pass
     pass
-
-
 
 def mts_column_post_process(
     datafile, t, L0, W0, area,
@@ -383,8 +417,6 @@ def mts_column_post_process(
             cline = map(float,lines[j].split(delimt))
         except ValueError, IndexError:
             pass
-        #except IndexError:
-        #pass
         else:
             ext = cline[iext]
             #print ext
@@ -517,32 +549,63 @@ def mts_column_post_process(
     pass
 
 
-def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, mod=None):
-    """ Post process of a series of in-plane tensile tests
-
+def nist_inplane(ext='*.csv', ifig=92, order=3,
+                 epsl=0.05, epsu=0.10, delt=10, mod=None):
+    """
+    Post process of a series of in-plane tensile tests
     Files from glob.glob('*.csv') are under process.
-    
+    The file name should be 'a_b_c.csv' with a, b and c are 
+    referring to material label, angle in 3 digits and
+    duplicate number, respectively.
+
     Arguments
     =========
-      ext = '*.csv'
-      ifig = 92
+      ext   = '*.csv'
+      ifig  = 92
       order = 3
-      epsl = 0.05
-      epsu = 0.10
-      delt = 10
-      mod  = None
+      epsl  = 0.05
+      epsu  = 0.10
+      delt  = 10
+      mod   = None
+
+    Variables
+    =========
+      files             : glob.glob(ext)
+      angles            : angles are obtained from the filename...
+      dang              : angles[1] - angles[0]
+      ang_off           : dang / 5.
+      FilesForthisAngle : Contains Files of the current angle
+      r15accl           : R-value array list
+      ys1               : ys_Teps, YS at the offset using total strain
+      ys2               : ys_Peps, YS at the offest using plastic strain
+      r_lowel           : R value at the lower strain
+      r_upel            : R value at the upper strain
+      siglowel          : Flow stress at the lower strain
+      sigupel           : Flow stress at the upper strain
+      r_lowel           : R value at the lower strain
+      r_upel            : R value at the upper strain
+
+    Dependents
+    ==========
+      glob, matplotlib.pyplot as plt, nist_column_post_process
     """
     import glob
     import matplotlib.pyplot as plt
+
+    # subject files whose extension is given as 'ext'
     files = glob.glob(ext)
+
     # sorting angles
+    # In the below, it is assumed that the files have
+    # 'a_b_c.csv' a: is label for material, b: 3-digit angle, c:duplicate
+
     angles = []
     for i in range(len(files)):
         temp = int(files[i].split('_')[1])
         if temp in angles: pass
         else: angles.append(temp)
         pass
-    angles.sort()
+    angles.sort() # sorting angle
 
     #mapping... into integers.
     angles = map(int, angles)
@@ -571,9 +634,9 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
     axYS2  = figYS2.add_subplot(111)
     axYSn  = figYSn.add_subplot(111)
 
-    ##
-    dang = abs(angles[1]-angles[0])
-    ang_off = dang/5.
+    ## 
+    dang = abs(angles[1] - angles[0])
+    ang_off = dang / 5.
 
     ys1_mast = []; ys1_err = []
     ys2_mast = []; ys2_err = []
@@ -592,47 +655,55 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
             pass
         print '     %i samples tested'%len(FilesForThisAngle)
 
-        r15accl, InstRMeanl, InstRslopel, ys1, ys2 = [], [], [], [], []
+        r15accl, InstRMeanl, InstRslopel = [], [], []
+        ys1, ys2 = [], []
         r_lowel, r_upel = [], []
         siglowel, sigupel = [], []
 
         ## Yield stress to be used for
-        # normalization w.r.t result along 0
-
+        # Normalization w.r.t result along 0
         for j in range(len(FilesForThisAngle)):
             ## getting one value parameters from nist_column_post_process.
             rst = nist_column_post_process(
-                datafile=FilesForThisAngle[j], echo=False, delt=delt, modulus=mod
-                )
+                datafile=FilesForThisAngle[j], 
+                echo=False, delt=delt, modulus=mod)
 
             # r15,
-            sig_lowe, sig_upe, r_lowe, r_upe, r15acc, InstRMean, InstRSTDV, InstRslope = rst[0:8]
-            ys_Teps, ys_Peps = rst[8:] #yield stress
+            sig_lowe, sig_upe, r_lowe, r_upe = rst[0:4]
+            r15acc, InstRMean, InstRSTDV, InstRslope = rst[4:8]
+            ys_Teps, ys_Peps = rst[8:] #Yield stress
 
             # axR15.plot(angles[i],r15, 'o', mfc='None', mec='black')
-            axR15a.plot(angles[i], r15acc,'o', mfc='None', mec='black')
-
-            axIR.errorbar(angles[i],InstRMean,yerr=InstRSTDV,color='grey',
-                          fmt='o', mfc='None', mec='black', ls='--')
-
-            axIR.plot(angles[i] - ang_off, r_lowe, 'o', mfc='None', mec='blue')
-            axIR.plot(angles[i] + ang_off, r_upe,  'o', mfc='None', mec='green')
-            # axIR.plot(angles[i],InstRMean,'o', mfc='None', mec='black')
-            axIRS.plot(angles[i],InstRslope, 'o', mfc='None', mec='black')
-
-            # yield stress(0.2pct offset from Total strain), flow stress at lowe strain(blue)
+            axR15a.plot(
+                angles[i], r15acc,'o', mfc='None', mec='black')
+            axIR.errorbar(
+                angles[i],InstRMean,yerr=InstRSTDV,color='grey',
+                fmt='o', mfc='None', mec='black', ls='--')
+            axIR.plot(angles[i] - ang_off, r_lowe,
+                      'o', mfc='None', mec='blue')
+            axIR.plot(angles[i] + ang_off, r_upe,
+                      'o', mfc='None', mec='green')
+            # axIR.plot(angles[i],InstRMean,
+            #  'o', mfc='None', mec='black')
+            axIRS.plot(angles[i],InstRslope,
+                       'o', mfc='None', mec='black')
+            # yield stress(0.2pct offset from Total strain),
+            # flow stress at lowe strain(blue)
             # and flow stress at upe strain(green).
-            axYS1.plot(angles[i] - ang_off,ys_Teps,'o', mfc='None', mec='black')
-            axYS1.plot(angles[i], sig_lowe,        'o', mfc='None', mec='blue')
-            axYS1.plot(angles[i] + ang_off,sig_upe,'o', mfc='None', mec='green')
-
-            axYS2.plot(angles[i] - ang_off,ys_Teps,'o', mfc='None', mec='black')            
-            axYS2.plot(angles[i], ys_Peps,         'o', mfc='None', mec='black')
-            axYS2.plot(angles[i] + ang_off,sig_upe,'o', mfc='None', mec='green')            
-
+            axYS1.plot(angles[i] - ang_off,ys_Teps,
+                       'o', mfc='None', mec='black')
+            axYS1.plot(angles[i], sig_lowe,
+                       'o', mfc='None', mec='blue')
+            axYS1.plot(angles[i] + ang_off,sig_upe,
+                       'o', mfc='None', mec='green')
+            axYS2.plot(angles[i] - ang_off,ys_Teps,
+                       'o', mfc='None', mec='black')            
+            axYS2.plot(angles[i], ys_Peps,
+                       'o', mfc='None', mec='black')
+            axYS2.plot(angles[i] + ang_off,sig_upe,
+                       'o', mfc='None', mec='green')            
             ## list
             # r15l.append(r15)
-
             r15accl.append(r15acc)
             InstRMeanl.append(InstRMean)
             InstRslopel.append(InstRslope)
@@ -645,24 +716,23 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
                 ysunl.append(sig_upe)
                 pass
 
-            # yield stress and r value at the low and up prescribed strains
+            # yield stress and r value at the low
+            # and up prescribed strains
             siglowel.append(sig_lowe)
             sigupel.append(sig_upe)
             r_lowel.append(r_lowe)
             r_upel.append(r_upe)
-
             pass # each sample for an angle
 
-
         # mean values for the current angle: angle[i]
-        #R15 = np.array(r15l).mean()
-        R15A = np.array(r15accl).mean()
-        IR = np.array(InstRMeanl).mean()
+        #R15   = np.array(r15l).mean()
+        R15A   = np.array(r15accl).mean()
+        IR     = np.array(InstRMeanl).mean()
         IRSLOP = np.array(InstRslopel).mean()
-        YS1 = np.array(ys1).mean()
-        YS2 = np.array(ys2).mean()
-        SIGL = np.array(siglowel).mean()
-        SIGU = np.array(sigupel).mean()
+        YS1    = np.array(ys1).mean()
+        YS2    = np.array(ys2).mean()
+        SIGL   = np.array(siglowel).mean()
+        SIGU   = np.array(sigupel).mean()
         R_LOWE = np.array(r_lowel).mean()
         R_UPE  = np.array(r_upel).mean()
 
@@ -672,20 +742,36 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
         ysu_mast.append(SIGU)
         ysl_mast.append(SIGL)
 
-
         # standard deviation
         if len(FilesForThisAngle)>1 :
-            #axR15.errorbar( angles[i],R15,fmt='+', yerr=np.std(r15l),           color='red')
-            axR15a.errorbar(angles[i],R15A,fmt='+', yerr=np.std(r15accl),       color='red')
-            axIR.errorbar(  angles[i],IR,fmt='+', yerr=np.std(InstRMeanl),      color='red')
+            #axR15.errorbar(
+            # angles[i],R15,fmt='+', yerr=np.std(r15l),
+            #  color='red')
+            axR15a.errorbar(
+                angles[i],R15A,fmt='+', yerr=np.std(r15accl),
+                color='red')
+            axIR.errorbar(
+                angles[i],IR,fmt='+', yerr=np.std(InstRMeanl),
+                color='red')
             ## low and upe
-            axIR.errorbar( angles[i]-ang_off,R_LOWE,fmt='+',yerr=np.std(r_lowel),       color='blue')
-            axIR.errorbar( angles[i]+ang_off,R_UPE, fmt='+',yerr=np.std(r_upel),        color='green')
-            axIRS.errorbar( angles[i],IRSLOP,fmt='+',yerr=np.std(InstRslopel),  color='red')
-            axYS1.errorbar( angles[i],YS1,fmt='+',yerr=np.std(ys1),             color='red')
-            axYS2.errorbar( angles[i],YS2,fmt='+', yerr=np.std(ys2),            color='red')
+            axIR.errorbar(
+                angles[i]-ang_off,R_LOWE,fmt='+',yerr=np.std(r_lowel),
+                color='blue')
+            axIR.errorbar(
+                angles[i]+ang_off,R_UPE, fmt='+',yerr=np.std(r_upel),
+                color='green')
+            axIRS.errorbar(
+                angles[i],IRSLOP,fmt='+',yerr=np.std(InstRslopel),
+                color='red')
+            axYS1.errorbar(
+                angles[i],YS1,fmt='+',yerr=np.std(ys1),
+                color='red')
+            axYS2.errorbar(
+                angles[i],YS2,fmt='+', yerr=np.std(ys2),
+                color='red')
 
-            # save standard deviation to the master error lists for yield stress
+            # save standard deviation to the master error lists
+            # for yield stress
             ys1_err.append(np.std(ys1))
             ys2_err.append(np.std(ys2))
             ysl_err.append(np.std(siglowel))
@@ -707,9 +793,6 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
             pass
         pass
 
-
-
-
     ## ticks
     d = abs(angles[1]-angles[0])
     ang0 = min(angles) - d
@@ -728,10 +811,18 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
 
     angles = np.array(angles) # numpy the angles list
 
-    axYSn.errorbar(angles- 1.5*d/8., ys1_mast/ys1n, yerr=ys1_err/ys1n, fmt='o', label=r'$\sigma^{YS}_1$')
-    axYSn.errorbar(angles- 0.5*d/8., ys2_mast/ys2n, yerr=ys2_err/ys2n, fmt='o', label=r'$\sigma^{YS}_2$')
-    axYSn.errorbar(angles+ 0.5*d/8., ysl_mast/ysln, yerr=ysl_err/ysln, fmt='o', label=r'$\bar{\sigma^{YS}}_l$')
-    axYSn.errorbar(angles+ 1.5*d/8., ysu_mast/ysun, yerr=ysu_err/ysun, fmt='o', label=r'$\bar{\sigma^{YS}}_u$')
+    axYSn.errorbar(
+        angles - 1.5*d/8., ys1_mast/ys1n,
+        yerr=ys1_err/ys1n, fmt='o', label=r'$\sigma^{YS}_1$')
+    axYSn.errorbar(
+        angles - 0.5*d/8., ys2_mast/ys2n,
+        yerr=ys2_err/ys2n, fmt='o', label=r'$\sigma^{YS}_2$')
+    axYSn.errorbar(
+        angles + 0.5*d/8., ysl_mast/ysln,
+        yerr=ysl_err/ysln, fmt='o', label=r'$\bar{\sigma^{YS}}_l$')
+    axYSn.errorbar(
+        angles + 1.5*d/8., ysu_mast/ysun,
+        yerr=ysu_err/ysun, fmt='o', label=r'$\bar{\sigma^{YS}}_u$')
     axYSn.legend(loc='best')
     axYSn.set_xlim(ang0, ang1)
     axYSn.set_xticks(np.arange(0,fin*1.01,30.))
@@ -739,19 +830,19 @@ def nist_inplane(ext='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10, m
     axYSn.set_ylim(0.,)
     figYSn.savefig('YS_norm_rescale.pdf')
 
-    #axR15.set_xlim(ang0,ang1)
-    axR15a.set_xlim(ang0,ang1)
-    axIR.set_xlim(ang0,ang1)
-    axIRS.set_xlim(ang0,ang1)
-    axYS1.set_xlim(ang0,ang1)
-    axYS2.set_xlim(ang0,ang1)
+    #axR15.set_xlim(ang0, ang1)
+    axR15a.set_xlim(ang0, ang1)
+    axIR.set_xlim(ang0,   ang1)
+    axIRS.set_xlim(ang0,  ang1)
+    axYS1.set_xlim(ang0,  ang1)
+    axYS2.set_xlim(ang0,  ang1)
 
     #axR15.set_xticks(np.arange(0,max(angles)*1.01,30.))
-    axR15a.set_xticks(np.arange(0,fin*1.01,30.))
-    axIR.set_xticks(np.arange(0,fin*1.01,30.))
-    axIRS.set_xticks(np.arange(0,fin*1.01,30.))
-    axYS1.set_xticks(np.arange(0,fin*1.01,30.))
-    axYS2.set_xticks(np.arange(0,fin*1.01,30.))
+    axR15a.set_xticks(np.arange(0, fin*1.01, 30.))
+    axIR.set_xticks(np.arange(0, fin*1.01, 30.))
+    axIRS.set_xticks(np.arange(0, fin*1.01, 30.))
+    axYS1.set_xticks(np.arange(0, fin*1.01, 30.))
+    axYS2.set_xticks(np.arange(0, fin*1.01, 30.))
 
     #axR15.set_ylabel('R15')
     axR15a.set_ylabel('R15a')
@@ -785,16 +876,28 @@ def polynomial_fitting_hr_recursive(
     order=3,
     maxiter=10,
     ):
-    """ recursive polynomial fitting for hardening rate
+    """
+    Recursive polynomial fitting for hardening rate
     and return the optimized poly1d
+
+    Arguments
+    =========
+     hr: hardening rate
+     strain: 
+
+    dependents:
+     polynomial_fitting_hr_multi, 
+     
     """
     ## initial guess
-    pfhm = polynomial_fitting_hr_multi
+    pfhm = polynomial_fitting_hr_multi ## abbreviation
     hrp0, z = pfhm(
         hr=hr, strain=strain,
-        lower_window=lower_window, upper_window=upper_window, order=order
+        lower_window=lower_window,
+        upper_window=upper_window, order=order
         )
-    ## hrp0: fitted hr for the given strain
+
+    ## hrp0: fitted hr for the given straina
     e0 = lower_window
     e1 = upper_window
 
@@ -803,13 +906,14 @@ def polynomial_fitting_hr_recursive(
     # -> that point is going to be the next upper_window
     # calculates the change of upper_window
     # break if iteration reach ...
-    # break if change of upper_windo is negligible <(0.0001 strain for instance.)
+    # break if change of upper_windo is negligible
+    # <(0.0001 strain for instance.)
     ##
 
     ## recursive calls.
     count = 0
     while True:
-    # calculates the strain where hrp0 = 0
+        # calculates the strain where hrp0 = 0
         """the condition is based on the presumption that
         initial hrp0 is decreasing with respect to strain...
 
@@ -907,27 +1011,38 @@ def polynomial_fitting_hr(hr, strain, lower_window=None, upper_window=None):
 
 
 def polynomial_fitting_hr_multi(hr, strain, lower_window=None, upper_window=None, order=3):
-    """Within the windwed strain range, perform an 3rd order polynomial
-    fitting of the hardening rate curve - d(sig)/d(eps)
     """
-    if lower_window==None:si = 0
+    Within the windwed (index wise) strain range, perform an n-order polynomial
+    fitting of the hardening rate curve - d(sig)/d(eps)
+    Returns 
+
+    Arguments
+    =========
+     hr                   : hardening rate
+     strain               : strain
+     lower_window  = None : starting index for the strain array
+     upper_window  = None : ending index for the strain array
+     order         = 3    :
+    """
+    if lower_window==None: si = 0
     else:
         for i in range(len(strain)):
             if strain[i]>lower_window:si=i;break
             pass
         pass
-    if upper_window==None:sf = -1
+    if upper_window==None: sf = -1
     else:
         for i in range(len(strain)):
             if strain[i]>upper_window:sf=i;break
             pass
         pass
 
-    hr = hr[si:sf]; eps = strain[si:sf]
+    hr = hr[si:sf]
+    eps = strain[si:sf]
     z = np.polyfit(eps, hr, order)
     p = np.poly1d(z)
-    return p,z
 
+    return p,z
     
 def polynomial_fitting(strain, stress, lower_window, upper_window):
     """ Within the windowed strain range, perform an polynomial
@@ -962,11 +1077,13 @@ def polynomial_fitting(strain, stress, lower_window, upper_window):
     return sig_fitted, hp, A, n 
 
 
-def windowed_rate_values(fout, le, engie, sig, sig_engi, te, we, time, E_pl, delt,wrk):
-    """ Calculates windowsed rate values.
+def __windowed_rate_values__(fout, le, engie, sig, sig_engi, te, we, time, E_pl, delt,wrk):
+    """
+    Calculates windowsed rate values.
 
-    arguments:
-      fout     : open object for saving data
+    Arguments
+    ---------
+      fout     : 'open' object for saving data
       le       : logarithmic strain
       engie    : engineering strain
       sig      : True stress
@@ -977,21 +1094,42 @@ def windowed_rate_values(fout, le, engie, sig, sig_engi, te, we, time, E_pl, del
       E_pl     : plastic strain
       delt     : 1/2 size of the window
       wrk      : plastic work
-    """
 
+    Dependent
+    ---------
+     1) numpy as np 2) __slope__
+
+    Returns
+     1) R-value 2) Strain rate 3) Hardeing rate 4) Engineering HR
+    """
     ## new fout file
-    ##--------------------------------------------------------------------------------
-    fout.writelines('%13s %13s %13s %13s '%('Strain','E_pl','Stress','Plastic_Work'))
-    fout.writelines('%13s %13s %13s %13s '%('time','pl_SR','dSig/dEps','R-value'))
-    fout.writelines('%13s %13s %13s \n'%('EngiStress','E_pl_trans', 'ER_pl_trans'))
-    fout.writelines('%13s %13s %13s %13s '%('NA','NA','MPa','MJ/m^3'))
-    fout.writelines('%13s %13s %13s %13s '%('s','/s','MPa','NA'))
-    fout.writelines('%13s %13s %13s \n'%('NA','NA','NA'))
+    ##----------------------------------------------------
+    fout.writelines(
+        '%13s %13s %13s %13s '%(
+            'Strain','E_pl','Stress','Plastic_Work'))
+    fout.writelines(
+        '%13s %13s %13s %13s '%(
+            'time','pl_SR','dSig/dEps','R-value'))
+    fout.writelines(
+        '%13s %13s %13s \n'%(
+            'EngiStress','E_pl_trans', 'ER_pl_trans'))
+    fout.writelines(
+        '%13s %13s %13s %13s '%(
+            'NA','NA','MPa','MJ/m^3'))
+    fout.writelines(
+        '%13s %13s %13s %13s '%(
+            's','/s','MPa','NA'))
+    fout.writelines(
+        '%13s %13s %13s \n'%(
+            'NA','NA','NA'))
+
     fname = fout.name
     fout.close()
     f = open(fname, 'r')
     header = f.read(); f.close()
-    ##--------------------------------------------------------------------------------
+    ##----------------------------------------------------
+
+    ## array initialization is done by cloning le.
     hr = np.zeros(len(le))
     hr_engi = hr.copy()
     Rv = hr.copy()
@@ -999,18 +1137,30 @@ def windowed_rate_values(fout, le, engie, sig, sig_engi, te, we, time, E_pl, del
     er_w = hr.copy()
     sr = hr.copy()
     srp = hr.copy()
-    
+    ##
+
     # window size: delt * 2
     # array : [i - delt : i + delt + 1]
     for i in range(len(le)):
-        if i-delt>=0 and i+delt+1<=len(le): #only if the window is within the range
-            HR      = __slope__(x=   le[i-delt:i+delt], y=     sig[i-delt:i+delt])
-            HR_ENGI = __slope__(x=engie[i-delt:i+delt], y=sig_engi[i-delt:i+delt])
-            RV      = __slope__(x=   te[i-delt:i+delt], y=      we[i-delt:i+delt])
-            ER_T    = __slope__(x= time[i-delt:i+delt], y=      te[i-delt:i+delt])
-            ER_W    = __slope__(x= time[i-delt:i+delt], y=      we[i-delt:i+delt])
-            SR      = __slope__(x= time[i-delt:i+delt], y=      le[i-delt:i+delt])
-            SRP     = __slope__(x= time[i-delt:i+delt], y=    E_pl[i-delt:i+delt])
+        #only if the window is within the range
+        if i-delt>=0 and i+delt+1<=len(le):
+            
+            HR      = __slope__(
+                x=   le[i-delt:i+delt], y=     sig[i-delt:i+delt])
+            HR_ENGI = __slope__(
+                x=engie[i-delt:i+delt], y=sig_engi[i-delt:i+delt])
+            RV      = __slope__(
+                x=   te[i-delt:i+delt], y=      we[i-delt:i+delt])
+            ER_T    = __slope__(
+                x= time[i-delt:i+delt], y=      te[i-delt:i+delt])
+            ER_W    = __slope__(
+                x= time[i-delt:i+delt], y=      we[i-delt:i+delt])
+            SR      = __slope__(
+                x= time[i-delt:i+delt], y=      le[i-delt:i+delt])
+            SRP     = __slope__(
+                x= time[i-delt:i+delt], y=    E_pl[i-delt:i+delt])
+
+            # Assign the slopes to the arrays
             hr[i] = HR
             hr_engi[i] = HR_ENGI
             Rv[i] = RV
@@ -1018,8 +1168,7 @@ def windowed_rate_values(fout, le, engie, sig, sig_engi, te, we, time, E_pl, del
             er_w[i] = ER_W
             sr[i] = SR
             srp[i] = SRP
-            pass
-        else:
+        else: # if out of the window,
             ## masking values
             hr[i] = np.NAN
             hr_engi[i] = np.NAN
@@ -1028,18 +1177,19 @@ def windowed_rate_values(fout, le, engie, sig, sig_engi, te, we, time, E_pl, del
             er_w[i] = np.NAN
             sr[i] = np.NAN #strain rate
             srp[i] = np.NAN #plastic strain rate
-            pass
-        pass
     
     # transposed data
-    data = np.array([le, E_pl, sig, wrk, time, sr, hr, Rv, sig_engi, we, er_w]).T
-    np.savetxt(fname.split('.')[0]+'.st0', data,fmt='%13.6e') #no header allowed for the current np ver.
+    data = np.array(
+        [le, E_pl, sig, wrk, time,
+         sr, hr, Rv, sig_engi, we, er_w]).T
+    # no header allowed when writing data on files.
+    np.savetxt(fname.split('.')[0]+'.st0', data,fmt='%13.6e') 
     cont = open(fname.split('.')[0]+'.st0', 'r').read()
     f = open(fname.split('.')[0]+'.st0', 'w')
-    f.write(header);f.write(cont);f.close() # prepend the header to the data-saved file.
+    # prepend the header to the data-saved file.
+    f.write(header);f.write(cont);f.close()
 
     return  Rv, sr, hr, hr_engi
-
 
 def nist_column_post_process(
     datafile=None, t=None, W0=None, area=None,
@@ -1053,9 +1203,91 @@ def nist_column_post_process(
     echo=False, modulus=None, #prescribable modulus [GPa]
     lowe=0.05, upe=0.15, #lower and upper strain for measuring r-value
     ):
-    """ NIST file's column post-process in details.
+    """
+    NIST file's column post-process in details.
+    Calculates strain, stress, R-value(evol), Hardening rate,
+    Uniaxial yield stress, R-value at certain strain levels.
+    
+    Arguments
+    =========
+      datafile = None
+      t        = None
+      W0       = None
+      area     = None
+      ls       = 50
+      us       = 80
+      delt     = 10
+      delimit  = ','
+      nhead    = 3
+      ifig     = 54
+      echo     = False
+      modulus  = None
+      lowe     = 0.05 (A single r-value is calculated at this strain)
+      upe      = 0.15 (A single r-value is calculated at this strain, too)
+
+    Variables
+    =========
+      engie             : engineering axial strain
+      le                : positive axial strain (total strain)
+      we                : negative width strain (total strain)
+      te                : negative thickness strain (total strain)
+      area (defined as) : Cross sectional area
+      sig_engi          : engineering stress
+      sig               : true stress
+      mod               : Young's modulus
+      E_pl              : Plastic strain
+      wrk               : Plastic work
+      R                 : R-value (defined by le, te and we)
+      SR                : Strain rate
+      HR                : Hardening rate
+      HRENGI            : Engineering hardening rate
+      time              : time which is used when calc the strain rate
+
+      ## polynomial fitting related variables ----------------------
+       sig = A eps^n
+       ln(sig) = n ln(eps) + ln(A)
+       -> y = nx + a
+      ## -----------------------------------------------------------
+      sigp              : fitted stress
+      hrp               : fitted hardening rate (dsig/deps)
+      A                 : The coefficient A
+      exponent          : The exponent n
+      trim_index        : The resulting trim index from hrp=sig criterion
+          * There are several attempts to get trim_index at which maximum
+            force is reached. Among others, the method that simply picks
+            up the maximum force per se gives the most stable and reliable
+            results.
+
+      uind              : Upper index
+      lind              : Lower index
+      r_15pct_acc       : we[uind] / te[uind]
+      R5_15             : R[lind:uind]
+      InstRMean         : np.array(R5_15).mean()
+      instRSTDV         : np.array(R5_15).std()
+      R_lowe            : R-value at lowe
+      R_upe             : R-value at upe
+      FlowStress_lowe   : Stress at lowe
+      FlowStress_upe    : Stress at upe
+      t0_15             : time[lind:uind]
+      InstRslope        : Instantaneous dot{R-value} array 5~15 range
+      ys_offset_fromTotalstrain   : YS at 0.002 offset of tot strain
+      ys_offset_fromPlasticstrain : YS    //              pl strain
+
+    Dependents
+    ==========
+      matplotlib.pyplot as plt, os, numpy as np,
+      __nist__triangle_strip__, scipy.integrate as integrate,
+      __windowed_rate_values__, polynomial_fitting,
+
+    Returns
+    =======
+      FlowStress_lowe, FlowStress_upe, R_lowe, R_upe,
+      r_15pct_acc, InstRMean, InstRSTDV, InstRslope,
+      ys_offset_fromTotalstrain, ys_offset_fromPlasticstrain
     """
     import matplotlib.pyplot as plt
+    import numpy as np
+    import scipy.integrate as integrate
     import os
     plt.ioff()
     path = os.getcwd()
@@ -1073,7 +1305,9 @@ def nist_column_post_process(
         print 'suspicious dimension found in'
         raise IOError, datafile
 
-    data = np.loadtxt(path+os.sep+datafile, skiprows=nhead, delimiter=delimt).T
+    data = np.loadtxt(
+        path+os.sep+datafile, skiprows=nhead, delimiter=delimt)
+    data = data.T
 
     time = data[0] #[s]
     ext = data[1] #[mm]
@@ -1088,124 +1322,119 @@ def nist_column_post_process(
     ldisp0 = l_disp[0]
     wdisp0 = w_disp[0]
 
-    ############################################################
+    #-------------------------------------------------------------#
     ## remove the triangle (following Adam Creuziger)
-    ## find dload/ext < 0
-    dforce = np.gradient(force)
-    i = 0
-    kount = 5 #at least 5 number of data are consistent.
-    # dload < 0 
-    while True:
-        if dforce[i]< 0:
-            if all(dforce[i:i+kount]<0): break
-                #print 'got the dload<0'
-            else: pass
-            pass
-        i = i + 1
-        pass
-    ## and  dload > 0 again
-    while True:
-        if dforce[i]>0:
-            if all(dforce[i:i+kount]>0): break
-            else: pass
-            pass
-        i = i + 1
-        pass
-    initial_index = i
-    ## trimming
+    ## scenario: 1) positive loading 2) unloading and 3) reloading
+    initial_index = __nist_triangle_strip__(force)
+    ## trimming the variables
     time = time[initial_index:] - time[initial_index] #time-zeroing
     ext = ext[initial_index:]
     force = force[initial_index:]
     l_disp = l_disp[initial_index:]
     w_disp = w_disp[initial_index:]
-    ## removal of triangle ends. #####################################
+    ## removal of triangle ends. ---------------------------------#
 
-    ##Again, following Adam Creuziger
+    # Again, following Adam Creuziger, --------------------------
+    # the gauge length and the transverse width are finely tuned.
     L0 = ldisp0 + lbar
     W0 = wdisp0 + wbar
     engie = (l_disp - ldisp0) / L0
     engiwe= (w_disp - wdisp0) / W0
-    engiwe = -1 * engiwe #
+    engiwe = -1 * engiwe
+    # ------------------------------------------------------------#
 
-    ## strain --------------------------------------------------
-    # True Strain e = ln(1+engie)
-    le = np.log(1+engie) #positive axial strain
-    we = np.log(1+engiwe) #negative width strain
-    te = -(le + we) #negative thickness strain
-
-    # True Stress s = S * (engi + 1)
-    area = W0 * t 
-    sig_engi = force / area  #N/mm^2 = N/m^2 / 10^-6 = 10^6 Pa = MPa
-    sig = sig_engi * (1 + engie)  # S = s * (einge + 1) #true stress
-    ## True stress
+    ## strain ----------------------------------------------------#
+    # True Strain e = ln(1 + engie)
+    le = np.log(1 + engie)  # positive axial strain
+    we = np.log(1 + engiwe) # negative width strain
+    te = - (le + we)        # negative thickness strain
+    # True Stress s = S * (engie + 1)
+    area = W0 * t
+    sig_engi = force / area     # N/mm^2 = N/m^2 /10^-6=10^6 Pa=MPa
+    sig = sig_engi * (1 + engie)# S = s * (einge + 1) : true stress
+    # ------------------------------------------------------------#
 
     ## modulus (tangent of the slope unless given)
     mod = slope(x=le, y=sig, upy=us, lowy=ls)
     if echo: print '%50s %5.3f [GPa]'%(
-        'Tangent Modulus calculated: ', mod/10**3)
+        'Tangent Modulus calculated: ', mod / 10**3)
     if modulus!=None and modulus<50*10**3:
         print' modulus is supposed to be [MPa] unit'
-    ##
-    ## plastic strain -------------------------
+
+    ## plastic strain ----------------------------------- #
     E_pl = []
     for i in range(len(le)): #true axial strain
-        if modulus!=None:
-            temp = le[i] - sig[i]/modulus
-        else:
-            temp = le[i] - sig[i]/mod
+        if modulus!=None: temp = le[i] - sig[i]/modulus
+        else: temp = le[i] - sig[i]/mod
         if temp<0: E_pl.append(0.)
         else: E_pl.append(temp)
-
-
     E_pl = np.array(E_pl)
-    ## ----------------------------------------
+    ## -------------------------------------------------- #
 
-    ## plastic work with first element being np.NAN
+    ## plastic work with first element being np.NAN ------ ##
     wrk = integrate.cumtrapz(y=sig, x=E_pl) #work integration
     wrk = np.concatenate(([np.NAN], wrk), axis=0)
-    if sig.shape==wrk.shape:pass
+    if sig.shape==wrk.shape: pass
     else: raise IOError,'unexpected shape'
-    ## ########################################
+    ## ---------------------------------------------------- ##
 
-    ## calculates 2nd order values by binning the data
-    fout = open(path+os.sep+datafile.split('.')[0]+'.str','w')
+    ## calculates 2nd order variables by binning the data -------#
+    # 1) R-value 2) Strain rate 3) Hardening rate 4) engineering HR
+    # through __windowed_rate_values__
+    fout = open(
+        path+os.sep + datafile.split('.')[0] + '.str',
+        'w')
 
-    R, SR, HR, HRENGI = windowed_rate_values(
+    # R-value, strain rate, hardeing rate, engineering hardening rate
+    R, SR, HR, HRENGI = __windowed_rate_values__(
         fout=fout, le=le, engie=engie,
         sig=sig, sig_engi=sig_engi,
         te=te, we=we, time=time,
         E_pl=E_pl, delt=delt, wrk = wrk
         )
-    ## 
 
-    ## illustration of the estimation on the uniform deformation trimming
+    ## Illustration of the estimation
+    ## on the uniform deformation trimming.
+    ## Altogether on the same figure
+    # 1) Sigma vs. Eps 2) Engineering str-str 3) 
     fig = plt.figure(ifig)
     fig.clf() ; ax=fig.add_subplot(111)
-    ax.plot(le[::10], sig[::10],'x', label='True Stress', mfc='None')
-    ax.plot(engie[::10], sig_engi[::10],'x', label='Engineering Stress-strain', mfc='None')
-    ax.plot(le[::10], HR[::10],'o', label=r'$d\sigma/d\varepsilon$', mfc='None')
-    ax.plot(engie[::10], HRENGI[::10],'d', label=r'$d\sigma^{engi}/d\epsilon$', mfc='None')
+    ax.plot(le[::10],    sig[::10],      'x',
+            label='True Stress', mfc='None')
+    ax.plot(engie[::10], sig_engi[::10], 'x',
+            label='Engineering Stress-strain',   mfc='None')
+    ax.plot(le[::10],    HR[::10],       'o',
+            label=r'$d\sigma/d\varepsilon$',     mfc='None')
+    ax.plot(engie[::10], HRENGI[::10],   'd',
+            label=r'$d\sigma^{engi}/d\epsilon$', mfc='None')
     ax.set_xlim(0.,)
 
-    ###########################################
-    # # polynomial fitting of hardening rate  #
-    # # sig = A eps^n                         #
-    # # ln(sig) = n ln(eps) + ln(A)           #
-    # # -> y = nx + a                         #
-    # ## In addition, hardening rate will be: #
-    # # -> d(sig) = A * n eps**(n-1)* d(eps)  #
-    # # dsig/deps =  A * n eps**(n-1)         #
+    ## Determination of uniform strain range starts here. #
+    
+    """
+    polynomial fitting of hardening rate  
+    sig = A eps^n                         
+    ln(sig) = n ln(eps) + ln(A)           
+    -> y = nx + a                         
+    
+    In addition, hardening rate will be:  
+    -> d(sig) = A * n eps**(n-1)* d(eps)  
+    dsig/deps =  A * n eps**(n-1)         
     lower_window = 0.05; upper_window=0.10
-    ###########################################
 
-    ## true stress-strain fitting
+    ** True stress-strain fitting
+       1) sigp     : fitted stress
+       2) hrp      : hrp = dsig/deps = A * n * strain ** (n-1)
+       3) A        : The coefficient A
+       4) exponent : The exponent n
+    """
     sigp, hrp, A, exponent = polynomial_fitting(
         strain=le.copy(), stress=sig.copy(),
         lower_window=lower_window,
         upper_window=upper_window
         )
 
-    ## find where dsig/deps = sig
+    ## find where dsig/deps (= hrp) = sig[?]
     ## fit the True flow curve
     trim_index= 2500
     for i in range(len(hrp)):
@@ -1214,11 +1443,11 @@ def nist_column_post_process(
             if echo:
                 print 'strain up to %5.2f'%le[i]
             break
-        pass
-
     ## --------------------------------------------------
-    ax.plot(le[::10], sigp[::10], '--', label=r'$A\varepsilon^n$', mfc='None')
-    ax.plot(le[::10],  hrp[::10], '--', label=r'$A n \varepsilon^{n-1}$')
+    ax.plot(le[::10], sigp[::10], '--',
+            label=r'$A\varepsilon^n$', mfc='None')
+    ax.plot(le[::10],  hrp[::10], '--',
+            label=r'$A n \varepsilon^{n-1}$')
 
     ## engineering stress- engineering strain fitting
     sigp, hrp, A, exponent = polynomial_fitting(
@@ -1227,18 +1456,25 @@ def nist_column_post_process(
         upper_window=upper_window,
         )
 
-    ax.plot(engie[::10], sigp[::10], '-.', label=r'$A\epsilon^n$ ', mfc='None')
-    ax.plot(engie[::10],  hrp[::10], '-.', label=r'$A n \epsilon^{n-1}$')
+    ax.plot(engie[::10], sigp[::10], '-.',
+            label=r'$A\epsilon^n$ ', mfc='None')
+    ax.plot(engie[::10],  hrp[::10], '-.',
+            label=r'$A n \epsilon^{n-1}$')
 
     ## direct fitting of experimenal hardening rate
     # HR vs le
 
     # fitting 1: d(sig)/d(eps) fitting
-    # using ln(hr) = a ln(eps) + b --- > it does not touch the 'hr = 0' horizontal line.
-    # hrp = polynomial_fitting_hr(hr=HR, strain=le,lower_window=0.10, upper_window=0.15)
+    # using ln(hr) = a ln(eps) + b
+    #  --- > it does not touch the 'hr = 0' horizontal line.
+    # hrp = polynomial_fitting_hr(
+    #     hr=HR, strain=le,lower_window=0.10, upper_window=0.15)
 
-    # fitting 2: recursive polynomial fitting order = 3 and returns the upper_strain limit...
-    ## it turns out to be very unstable. So I put in within 'try, and except'
+    # fitting 2: recursive polynomial fitting order = 3
+    # and returns the upper_strain limit...
+    ## --> it turns out to be very unstable.
+    ##     Sometimes it even crashes.
+    ##     So, I put in within 'try, and except' as below.
     try:
         hrp, dum, upper_strain = polynomial_fitting_hr_recursive(
             hr=HR, strain=le,
@@ -1247,19 +1483,20 @@ def nist_column_post_process(
             order=order
             )
         hr_fitted = hrp(le)
-        ax.plot(le[::10], hr_fitted[::10], '-o', label=r'recursive 3rd polynomial fitting')
-        pass
-    except:pass
+        ax.plot(
+            le[::10], hr_fitted[::10], '-o',
+            label=r'recursive 3rd polynomial fitting')
+    except: pass
+    ## fitting 2 ends
 
-    ## simply picking up the maximum force --> turned out to be most stable and reliable!
+    ## 3rd method and the comparatively reliable method
+    ## -> simply picking up the maximum force
     maxind = np.where(max(sig_engi)==sig_engi)[0][0]
     if echo==True:
         print '\nMax engineering stress: %5.2f at index: %i\n'%(
-            sig_engi[maxind], maxind
-            )
+            sig_engi[maxind], maxind)
         print 'Strain: %5.2f\n'%engie[maxind]
         print maxind
-        pass
     trim_index = maxind
 
     # maximum point 
@@ -1285,6 +1522,7 @@ def nist_column_post_process(
         print 'estimated uniform strain: %5.2f'%le[trim_index]
         pass
 
+    ## trimming all variables have been obtined above.
     le = le[:trim_index]
     we = we[:trim_index]
     te = te[:trim_index]
@@ -1298,40 +1536,39 @@ def nist_column_post_process(
     time = time[:trim_index]
 
     ## some more typtical figures...
-    ##  strain rate
+    #  strain rate
     fig = plt.figure(ifig); fig.clf()
-    ax = fig.add_subplot(111)
+    ax  = fig.add_subplot(111)
     ax.semilogy(le, SR, label='strain rate')
     ax.set_xlabel(r'$\varepsilon$', fontsize=20)
     ax.set_ylabel(r'$\dot{\varepsilon^{tot}}$')
     ax.legend(loc='best')
     fig.savefig('str-SR_%s.pdf'%datafile.split('.')[0])
-    ## hardening rate
+    # hardening rate
     fig = plt.figure(ifig); fig.clf()
-    ax = fig.add_subplot(111)
+    ax  = fig.add_subplot(111)
     ax.semilogy(le, HR, label=r'$d\sigma/d\varepsilon^{tot}$')
     ax.set_xlabel(r'$\varepsilon^{tot}$', fontsize=20)
     ax.set_ylabel(r'$d\sigma/d\varepsilon^{tot}$ [MPa]')
     ax.legend(loc='best')
     fig.savefig('str-HR_%s.pdf'%datafile.split('.')[0])
 
-    ####################################################
-    ## typical one value parameter calculation
-    ## r-values, Yield strength, Ultimate tensile stress
-    
-    #1 R-value lowe~ upe (or best uniform strain) linear interpolation:
 
-    # lind
+    #------------------------------------------------------------------
+    # typical one value parameter calculation
+    # r-values, Yield strength, Ultimate tensile stress
+
+    # R-value lowe~ upe (or best uniform strain) linear interpolation:
+    # lower and upper indices: lind & uind
+    # 1) lind
     if lowe>max(le):
         raise IOError, 'lowe is bigger than max(le)'
     else:
         for i in range(len(le)):
             if le[i]>lowe:
-                lind=i-1
+                lind = i-1
                 break
-        pass
-
-    # uind
+    # 2) uind
     if max(le)< upe:
         print 'max(le)< upe'
         print 'index is fixed to be len(le)-1'
@@ -1341,12 +1578,10 @@ def nist_column_post_process(
             if le[i]>upe:
                 uind = i - 1
                 break
-            pass
-        pass
 
-    r_15pct_acc = we[uind]/te[uind]
+    r_15pct_acc = we[uind] / te[uind]
     if echo: print '%50s %5.3f'%(
-        'Accummulated r value upto 15pct:',r_15pct_acc)
+        'Accummulated r value upto 15pct:', r_15pct_acc)
 
     # 5~15 pct (or best uniform strain)
     ## Instantaneous mean R-value
@@ -1358,16 +1593,19 @@ def nist_column_post_process(
     #R_lowe ??
     lind0 = lind; lind1 = lind + 1
     x0 = le[lind0]; x1 = le[lind1]
-    y0 = R[lind0]; y1 = R[lind1]
-    R_lowe = (y1-y0)/(x1-x0) * (lowe-x0) + y0
+    y0 = R[lind0];  y1 = R[lind1]
+    R_lowe = (y1 - y0) / (x1 - x0) * (lowe - x0) + y0
+
     #FlowStress_lowe
     y0 = sig[lind0]; y1 = sig[lind1]
     FlowStress_lowe = (y1-y0)/(x1-x0) * (lowe-x0) + y0
+
     #R_upe
     uind0 = uind; uind1 = uind + 1
     x0 = le[uind0]; x1 = le[uind1]
     y0 = R[uind0]; y1 = R[uind1]
     R_upe = (y1-y0)/(x1-x0) * (upe-x0) + y0
+
     #FlowStress_upe
     y0 = sig[uind0]; y1 = sig[uind1]
     FlowStress_upe = (y1-y0)/(x1-x0) * (upe-x0) + y0    
@@ -1376,24 +1614,26 @@ def nist_column_post_process(
     t0_15 = np.array(time[lind:uind])
     InstRslope = __slope__(t0_15, R5_15)
     if echo:
-        print '%50s %5.3e'%('Slope of Instantaneous R-value vs time:',InstRslope)
+        print '%50s %5.3e'%(
+            'Slope of Instantaneous R-value vs time:',
+            InstRslope)
 
     ## Yield strength finder..
     ## 0.2 pct offset
     for i in range(len(le)):
         if le[i]>0.002:
-            index=i
+            index = i
             break
-        pass
 
     # interpolatation
     y0 = sig[index-1]
     y1 = sig[index]
     x0 = le[index-1]
     x1 = le[index]
-    ys = (y1-y0)/(x1-x0) * ( 0.002 - x0) + y0
+    ys = (y1 - y0) / (x1 - x0) * (0.002 - x0) + y0
     if echo:
-        print '%50s %5.3f [MPa]'%('Total strain 0.2pct offset yield strength:',ys)
+        print '%50s %5.3f [MPa]'%(
+            'Total strain 0.2pct offset yield strength:', ys)
     ys_offset_fromTotalstrain = ys
 
     for i in range(len(E_pl)):
@@ -1408,7 +1648,8 @@ def nist_column_post_process(
     x1 = E_pl[index]
     ys = (y1-y0)/(x1-x0) * (0.002 - x0) + y0
     if echo:
-        print '%50s %5.3f [MPa]'%('Plastic strain 0.2pct offset yield strength:',ys)
+        print '%50s %5.3f [MPa]'%(
+            'Plastic strain 0.2pct offset yield strength:', ys)
     ys_offset_fromPlasticstrain = ys
 
     ## save figures....
@@ -1449,11 +1690,50 @@ def nist_column_post_process(
     ax.plot(time[::10],le[::10], 'o', mfc='None')
     fig.savefig('e-time_%s.pdf'%datafile.split('.')[0])
 
-    return FlowStress_lowe, FlowStress_upe, R_lowe, R_upe, r_15pct_acc, InstRMean, InstRSTDV, InstRslope,ys_offset_fromTotalstrain,ys_offset_fromPlasticstrain
+    return FlowStress_lowe, FlowStress_upe, R_lowe, R_upe, r_15pct_acc, InstRMean, InstRSTDV, InstRslope, ys_offset_fromTotalstrain, ys_offset_fromPlasticstrain
 
 
+def __nist_triangle_strip__(force):
+    """
+    NIST's triangle loading stripper
 
+    This def removes the triangle (following Adam Creuziger)
 
+     ^ force     /
+     |     /\   /
+     |  __/  \_/
+     |--------------> time
+    
+    Considering the scenario: 1) positive loading
+      2) unloading and 3) reloading
+
+    Dependent:
+      numpy as np
+    Returns:
+      initial_index
+    """
+    import numpy as np
+    ## Scenario: 1) positive loading 2) unloading and 3) reloading
+
+    # 1) find dload/ext < 0
+    dforce = np.gradient(force)
+    i = 0
+    kount = 5 #at least 5 number of data are consistent.
+    # 2) dload < 0 
+    while True:
+        if dforce[i]< 0:
+            if all(dforce[i:i+kount]<0): break
+                #print 'got the dload<0'
+            else: pass
+        i = i + 1
+    # 3) and  dload > 0 again
+    while True:
+        if dforce[i]>0:
+            if all(dforce[i:i+kount]>0): break
+            else: pass
+        i = i + 1
+    initial_index = i
+    return initial_index
 
 class pp_plot:
     def __init__(self, ifig, delt):
