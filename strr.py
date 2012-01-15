@@ -47,15 +47,18 @@ def avgarea():
         if len(flag)==0: break
         pass
 
-def param(ifile=False, filename='str_str_r.inp', mode=None):
+def param(ifile=False, filename='strr.inp', mode=None):
     """
-    param definition gives certain parameters
+    Finds and returns certain parameters envolved in analysis
+    thickness, Gauge length, upper stress, lower stress,
+    binning window size, flag to tell if it is force or stress,
+    the corresponding unit either 'kN' or 'N'.  If ifile is False,
+    the module takes the values manually. The values can be given
+    through 'strr.inp' file.
+    
+    Thickness, L0(gauge length), W0(transverse width), ifor_str, unit,
 
-    thickness, L0(gauge length), W0(transverse width), ifor_str, unit,
-    If ifile is True, variables are read from the file whose name is
-    given as the filename argument.
-
-    mode (case insensitive)
+    Mode (case insensitive)
       MTS or NIST
       * MTS is the one at GIFT
 
@@ -65,17 +68,22 @@ def param(ifile=False, filename='str_str_r.inp', mode=None):
       * W0       : Transverse width of the sample
       * ifor_str : either 'force' or 'stress'
       * unit     : Force unit 'kN' or 'N'
-      * delt     : Bin size
+      * delt     : Bin size (binning window size when calculating
+             2nd order terms like R-value, strain rate and so on.
       * ls       : Lower stress (default=10 MPa)
       * us       : Upper stress (default=80 MPa)
 
-    Returns t, L0, W0, area, ls, us, delt, ifor_str, unit
+    If ifile==False:
+        Returns t, L0, W0, area, ls, us, delt, ifor_str, unit
+    elif ifile==True:
+        Returns likewise but from the given file.
 
     Defaults of the NIST case:
       * ifor_str='force' : ifor_str is either 'force' or 'stress'
       * unit='N'
     Defaults of the MTS case:
-      * 
+      * ifor_str='force'
+      # unit='kN'
     """
     if mode==None: raise IOError, 'No mode is given.'
 
@@ -103,7 +111,6 @@ def param(ifile=False, filename='str_str_r.inp', mode=None):
             unit='N'; print 'unit [%s]'%unit
         else: unit = raw_input("Unit of load (N or kN: default is 'kN') >>> ")
 
-        
         delt = raw_input('Bin size for slope calc (R, SR, HR, default=20) >>')
         print '\nInput Low and up stress from which the slope is calculated'
         ls = raw_input('Lower stress (default=10 MPa)')
@@ -133,26 +140,41 @@ def param(ifile=False, filename='str_str_r.inp', mode=None):
         lines = f.read()
         lines = lines.split('\n')
         myline = lines[1:9]
-        
+
         tmp = []
         for i in range(8):
             tmp.append(myline[i].split(',')[1])
-        
+
         tmp[0] = float(tmp[0])
         tmp[1] = float(tmp[1])
         tmp[2] = float(tmp[2])
         tmp[3] = float(tmp[3])
         tmp[4] = float(tmp[4])
         tmp[5] = int(tmp[5])
-        
+
         print 't, L0, W0, area = ', tmp[0], tmp[1], tmp[2], tmp[0]*tmp[2]
         f.close()
         return tmp[0],tmp[1],tmp[2],tmp[0]*tmp[2],tmp[3],tmp[4],tmp[5],tmp[6],tmp[7]
-    pass
+    pass # End of def param
 
-def column(ifile=False, filename='str_str_r.inp'):
+def column(ifile=False, filename='strr.inp'):
     """
-    Read column data (5 coloums from MTS)
+    Read column data's format (5 coloums from MTS)
+    to find which column corresponds to which physical term.
+
+    Arguments
+    =========
+      ifile=False
+      filename='strr.inp')
+
+    Internal flags
+    ==============
+      switch : 'y' (Axial value is given as extension [mm])
+              'n' (Axial engineering strain [mm/mm])
+      itime  : Column # of time [s]
+      iext   : Column # of axial extension
+      ifor   : Column # of standard force [kN]
+      iwid   : column # of change in width [mm]
 
     ---> seems to be buggy. It has to be modified. (2011, Oct 11)
     column is now only used for MTS.
@@ -184,11 +206,10 @@ def column(ifile=False, filename='str_str_r.inp'):
         else: ifor = int(ifor)
         if len(iwid) == 0: iwid = 2
         else: iwid = int(iwid)
-        
         return itime, iext, ifor, iwid, switch
     
     elif ifile==True:
-        # when input file (str_str_r.inp) is given.
+        # when input file (strr.inp) is given.
         f = open(filename, 'r')
         lines = f.read()
         lines = lines.split('\n')
@@ -262,7 +283,6 @@ def __slope__(x, y):
     z = np.polyfit(x,y,1)
     return z[0]
 
-
 """
 t = 0.42 # unit: mm
 L0 = 50.  # unit: mm
@@ -274,7 +294,16 @@ a = t * L0 # unit: mm^2
 def pp(mode='MTS'):
     """
     Post-process the uniaxial tension tests
+
+    Arguments:
+    mode='MTS'
+
+    Dependents
+    ==========
+    glob, param, column, delimiter,
+    nist_column_post_process, mts_column_post_process
     """
+    import glob
     ## which raw data file and where?
     path = raw_input('Path or Enter(current working directory)  >>')
     extension = raw_input('Extension (e.g. txt or csv .. etc)  >>')
@@ -286,7 +315,9 @@ def pp(mode='MTS'):
     except:
         ## files : list of input raw data files
         if len(extension)==0:
-            files = glob.glob('*.TRA')+glob.glob('*.TXT')+glob.glob('*.CSV')
+            files = glob.glob(
+                '*.TRA') + glob.glob(
+                '*.TXT') + glob.glob('*.CSV')
             pass
         else: files = glob.glob('*.' + extension)
     else:
@@ -311,12 +342,13 @@ def pp(mode='MTS'):
         print '\n*******************'
         print 'Intrinsic functions'
         print '*******************\n'
-        iinp = raw_input(" Use 'str_str_r.inp' (y or n)  >> ")
+        iinp = raw_input(" Use 'strr.inp' (y or n)  >> ")
         if iinp == 'y': ifile = True
         else : ifile = False
 
         # only effetive when ifile is True
-        t,L0,W0,area,ls,us,delt,ifor_str,unit = param(ifile = ifile,mode=mode)
+        t, L0, W0, area, ls, us, delt, ifor_str, unit = param(
+            ifile = ifile,  mode=mode)
 
         if mode.upper()=='NIST': pass #skip
         else:
@@ -345,7 +377,6 @@ def pp(mode='MTS'):
                 itime=itime, iext=iext, ifor=ifor,
                 iwid=iwid, switch=switch, coef=coef                
                 )
-            pass
         else:
             mts_column_post_process(
                 datafile=files[i],
@@ -357,9 +388,7 @@ def pp(mode='MTS'):
                 itime=itime, iext=iext, ifor=ifor,
                 iwid=iwid, switch=switch, coef=coef
                 )
-            pass
-        pass
-    pass
+    pass # end of def pp
 
 def mts_column_post_process(
     datafile, t, L0, W0, area,
@@ -367,7 +396,32 @@ def mts_column_post_process(
     path, delimt, itime, iext, ifor, iwid, switch, coef,
     ):
     """
-    The old DATA file's column post process in details
+    The old DATA file's column post process in details.
+    Analyze the raw data and writes the physically meaningful
+    entities on to '.str' files.
+    
+    Arguments
+    =========
+    datafile : raw data file name
+    t        : Initial thickness of the sample
+    L0       : Gauge length
+    W0       : Width length
+    area     : Cross sectional area
+    ls       : Lower stress  --\
+    us       : Uppor stress  ---\--> in which E is linearly interpolated.
+    delt     : binning window size (number of elements along an axis)
+    ifort_str: Force of stress
+    unit     : [kN] or [N]
+    path     : path where the data files are located
+    delimt   : delimt between columns
+
+    itime    : Column # for time
+    iext     : Column # for axial extension
+    ifor     : Column # for axial force
+    iwid     : Column # for width
+    switch   : 
+    coef     : Coefficient when converting force to stress.
+               Refer to the code itself for details.
     """
     import matplotlib.pyplot as plt
     import os
@@ -428,52 +482,42 @@ def mts_column_post_process(
                 el = math.log(ext + 1)        #true strain
                 pass
             E_l.append(el)
-            print '\n\n*********************************************'
-            print 'It presumes that  change of width is positive'
-            print '(in the positive sense)'
-            print '*********************************************\n\n'
-            
+            print '\n\n*************************************************'
+            print 'Width value is given as a tranveling value such that '
+            print 'it assumes that change of width is positive'
+            print '*****************************************************\n\n'
+
             engiw = - chg_wid / W0 #negative width strain
             ew = math.log(1 + engiw) #convert into true strain
             E_w.append(ew)
             time.append(tcc)
-            
+
             if ifor_str == 'force':
                 if switch =='y':
+                    '\sigma = coef * F/A * (e + 1) * 1000'
                     stress = coef * force / area * (ext / L0 + 1) * 1000.
-                    engi = coef * force /area * 1000.
                 elif switch =='n':
                     stress = coef * force / area * (ext + 1) * 1000.
-                    engi = coef * force /area * 1000.
-                else:
-                    print "Wrong switch!"
-                    raise IOError
-            elif ifor_str =='stress':
+                else: raise IOError, "Wrong switch!"
+                engi = coef * force /area * 1000.
+            elif ifor_str == 'stress':
                 if switch == 'y' or switch=='n':
                     stress = coef * force * (ext / L0 + 1)
-                    eng = coef * force
-                else :
-                    print 'Wrong Switch!'
-                    raise IOError
-                    #print 'stress = ', stress
-                pass
-            else:
-                raise IOError;pass
+                    engi = coef * force
+                else : raise IOError, 'Wrong Switch!'
+            else: raise IOError
+
             S.append(stress)
             engs.append(engi)
                 #print S[0:10]
             E_t.append(-(E_l[i]+E_w[i])) #thickness strain is negative
-            try:
-                R_ = E_w[i]/E_t[i]
+            try: R_ = E_w[i]/E_t[i]
             except ZeroDivisionError:
                 R_ = 0.
-                pass
             R.append(R_)
             i = i + 1
-            pass
         pass # end of each lines in the datafile
 
-    
     mod = slope(x=E_l, y=S, upy=us, lowy=ls)
     print 'Modulus : ', mod/10**3,' GPa'
 
@@ -482,7 +526,6 @@ def mts_column_post_process(
         E_p = E_l[i] - S[i]/mod
         if E_p < 0:E_pl.append(0)
         else : E_pl.append(E_p)
-        pass
     ## 
     
     wrk = integrate.cumtrapz(y=S, x=E_pl) # work integration
@@ -505,7 +548,6 @@ def mts_column_post_process(
                         raw_input()
                         print time[i-delt:i+delt]
                         print E_pl[i-delt:i+delt]
-                        pass
                     hr = __slope__(x=E_l[i-delt:i+delt],
                                    y=S[i-delt:i+delt])
                     Rv = __slope__(x=E_t[i-delt:i+delt],
@@ -515,10 +557,8 @@ def mts_column_post_process(
                     er_w = __slope__(x=time[i-delt:i+delt],
                                      y=E_w[i-delt:i+delt])
                 else: sr, hr, Rv, er_t, er_w = 0., 0., 0., 0., 0.
-                pass
-            else:
-                sr, hr, Rv, er_t, er_w = 0., 0., 0., 0., 0.
-                pass
+            else: sr, hr, Rv, er_t, er_w = 0., 0., 0., 0., 0.
+
             ## strain, e_pl, stress, plastic_work, time, pl-SR, dsig/dEps, 'R-values',
             ## EngiStress, E_pl_trans, ER_pl_Trans
             fout.write('%13.6e %13.6e %13.6e %13.6e %13.6e'%(
@@ -529,8 +569,7 @@ def mts_column_post_process(
             fout.write(' %13.6e %13.6e %13.6e\n'%(engs[i],E_w[i], er_w)
                        ) #engi stress, E_pl_wdith, Strain Rate_w
             #fout.write(' %13.6e %13.6e %13.6e\n'%(engs[i],E_w[i], er_t))
-            pass
-        pass
+
     fig = plt.figure(1)
     ax = fig.add_subplot(111)
     ax.plot(E_l,S)
@@ -544,13 +583,12 @@ def mts_column_post_process(
     fout.close()
     print 'the figure is saved to %s'*'temp_mst_colpp.pdf'
     fig.savefig('temp_mst_colpp.pdf')
-    pass
-
+    pass # end of def mts_column_post_process
 
 def nist_inplane(ext='*.csv', ifig=92, order=3,
                  epsl=0.05, epsu=0.10, delt=10, mod=None):
     """
-    Post process of a series of in-plane tensile tests
+    Post-processes a series of in-plane tensile tests.
     Files from glob.glob('*.csv') are under process.
     The file name should be 'a_b_c.csv' with a, b and c are 
     referring to material label, angle in 3 digits and
@@ -687,7 +725,8 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
                 FilesForThisAngle.append(files[j])
                 pass
             pass
-        print '     %i samples tested'%len(FilesForThisAngle)
+        print '     %i samples tested'%len(
+            FilesForThisAngle)
 
         r15accl, InstRMeanl, InstRslopel = [], [], []
         ys1, ys2 = [], []
@@ -724,18 +763,37 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
             # yield stress(0.2pct offset from Total strain),
             # flow stress at lowe strain(blue)
             # and flow stress at upe strain(green).
-            axYS1.plot(angles[i] - ang_off,ys_Teps,
-                       'o', mfc='None', mec='black')
-            axYS1.plot(angles[i], sig_lowe,
-                       'o', mfc='None', mec='blue')
-            axYS1.plot(angles[i] + ang_off,sig_upe,
-                       'o', mfc='None', mec='green')
-            axYS2.plot(angles[i] - ang_off,ys_Teps,
-                       'o', mfc='None', mec='black')            
-            axYS2.plot(angles[i], ys_Peps,
-                       'o', mfc='None', mec='black')
-            axYS2.plot(angles[i] + ang_off,sig_upe,
-                       'o', mfc='None', mec='green')            
+            if i==0 and j==0:
+                axYS1.plot(
+                    angles[i] - ang_off,ys_Teps,
+                    'o', mfc='None', mec='black',
+                    label=r'$\sigma^{YS}_{\varpepsilon_{tot}}$')
+                axYS1.plot(
+                    angles[i], sig_lowe,
+                    'o', mfc='None', mec='blue',
+                    label=r'$\sigma^{low}_{\varepsilon_{tot}}$')
+                axYS1.plot(
+                    angles[i] + ang_off,sig_upe,
+                    'o', mfc='None', mec='green')
+                axYS2.plot(angles[i] - ang_off,ys_Teps,
+                           'o', mfc='None', mec='black')            
+                axYS2.plot(angles[i], ys_Peps,
+                           'o', mfc='None', mec='black')
+                axYS2.plot(angles[i] + ang_off,sig_upe,
+                           'o', mfc='None', mec='green')
+            else:
+                axYS1.plot(angles[i] - ang_off,ys_Teps,
+                           'o', mfc='None', mec='black')
+                axYS1.plot(angles[i], sig_lowe,
+                           'o', mfc='None', mec='blue')
+                axYS1.plot(angles[i] + ang_off,sig_upe,
+                           'o', mfc='None', mec='green')
+                axYS2.plot(angles[i] - ang_off,ys_Teps,
+                           'o', mfc='None', mec='black')            
+                axYS2.plot(angles[i], ys_Peps,
+                           'o', mfc='None', mec='black')
+                axYS2.plot(angles[i] + ang_off,sig_upe,
+                           'o', mfc='None', mec='green')            
             ## list
             # r15l.append(r15)
             r15accl.append(r15acc)
@@ -781,19 +839,42 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
             #axR15.errorbar(
             # angles[i],R15,fmt='+', yerr=np.std(r15l),
             #  color='red')
-            axR15a.errorbar(
+            """
+            index i on every angle
+            index j on files on i-th angle
+            """
+            label=None
+            axR1a5a.errorbar(
                 angles[i],R15A,fmt='+', yerr=np.std(r15accl),
                 color='red')
-            axIR.errorbar(
-                angles[i],IR,fmt='+', yerr=np.std(InstRMeanl),
-                color='red')
-            ## low and upe
-            axIR.errorbar(
-                angles[i]-ang_off,R_LOWE,fmt='+',yerr=np.std(r_lowel),
-                color='blue')
-            axIR.errorbar(
-                angles[i]+ang_off,R_UPE, fmt='+',yerr=np.std(r_upel),
-                color='green')
+
+            ## Instantaneous R-value at -----------------------------#
+            if i==0 and j==0:
+                axIRp1, = axIR.errorbar(
+                    angles[i], IR, fmt='+', yerr=np.std(InstRMeanl),
+                    color='red', label=r'$\bar{R^{inst}}$')
+                axIRp2, = axIR.errorbar(
+                    angles[i]-ang_off,R_LOWE,fmt='+',
+                    yerr=np.std(r_lowel), color='blue',
+                    label=r'$R^{inst}_{low}$')
+                axIRp3, = axIR.errorbar(
+                    angles[i]+ang_off,R_UPE, fmt='+',
+                    yerr=np.std(r_upel), color='green',
+                    label=r'$R^{inst}_{up}$')
+                axIR.legend()
+            else:
+                axIR.errorbar(
+                    angles[i], IR, fmt='+', yerr=np.std(InstRMeanl),
+                    color='red', label=label)
+                axIR.errorbar(
+                    angles[i]-ang_off,R_LOWE,fmt='+',
+                    yerr=np.std(r_lowel), color='blue')
+                axIR.errorbar(
+                    angles[i]+ang_off,R_UPE, fmt='+',
+                    yerr=np.std(r_upel), color='green')
+            ## ------------------------------------------------------#
+            
+
             axIRS.errorbar(
                 angles[i],IRSLOP,fmt='+',yerr=np.std(InstRslopel),
                 color='red')
@@ -814,9 +895,13 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
         else:
             #axR15.plot( angles[i],R15,'+',    color='red')
             axR15a.plot( angles[i],R15A,'+',   color='red')
+
+            # Instantaneous R-value -----------------------------#
             axIR.plot(  angles[i],IR,'+',     color='red')
             axIR.plot( angles[i]-ang_off, R_LOWE, color='blue')
             axIR.plot( angles[i]+ang_off, R_UPE,  color='green')
+            #----------------------------------------------------#
+
             axIRS.plot( angles[i],IRSLOP,'+', color='red')
             axYS1.plot( angles[i],YS1,'+',    color='red')
             axYS2.plot( angles[i],YS2,'+',    color='red')
@@ -857,9 +942,10 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
     axYSn.errorbar(
         angles + 1.5*d/8., ysu_mast/ysun,
         yerr=ysu_err/ysun, fmt='o', label=r'$\bar{\sigma^{YS}}_u$')
+
     axYSn.legend(loc='best')
     axYSn.set_xlim(ang0, ang1)
-    axYSn.set_xticks(np.arange(0,fin*1.01,30.))
+    axYSn.set_xticks(np.arange(0, fin*1.01, 30.))
     figYSn.savefig('YS_norm.pdf')
     axYSn.set_ylim(0.,)
     figYSn.savefig('YS_norm_rescale.pdf')
@@ -879,16 +965,19 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
     axYS2.set_xticks(np.arange(0, fin*1.01, 30.))
 
     #axR15.set_ylabel('R15')
-    axR15a.set_ylabel('R15a')
-    axIR.set_ylabel(r'$\bar{R}^{inst}$')
-    axYS1.set_ylabel(r'$\sigma^{YS}$ offset from $\varepsilon^{tot}$')
-    axYS2.set_ylabel(r'$\sigma^{YS}$ offset from $\varepsilon^{pl}$')
+    axR15a.set_ylabel('R15a',dict(fontsize=20))
+    axIR.set_ylabel(r'$\bar{R}^{inst}$',dict(fontsize=20))
+    axIRS.set_ylabel(r'$\dot{R}^{inst}$', dict(fontsize=20))
+    axYS1.set_ylabel(r'$\sigma^{YS}$ offset from $\varepsilon^{tot}$',
+                     dict(fontsize=20))
+    axYS2.set_ylabel(r'$\sigma^{YS}$ offset from $\varepsilon^{pl}$',
+                     dict(fontsize=20))
 
     #axR15.set_xlabel(r'$\theta$')
-    axR15a.set_xlabel(r'$\theta$')
-    axIR.set_xlabel(r'$\theta$')
-    axYS1.set_xlabel(r'$\theta$')
-    axYS2.set_xlabel(r'$\theta$')
+    axR15a.set_xlabel(r'$\theta$',dict(fontsize=20))
+    axIR.set_xlabel(r'$\theta$',dict(fontsize=20))
+    axYS1.set_xlabel(r'$\theta$',dict(fontsize=20))
+    axYS2.set_xlabel(r'$\theta$',dict(fontsize=20))
 
     #figR15.savefig('figR15.pdf')
     figR15a.savefig('figR15a.pdf')
@@ -1241,6 +1330,8 @@ def nist_column_post_process(
     NIST file's column post-process in details.
     Calculates strain, stress, R-value(evol), Hardening rate,
     Uniaxial yield stress, R-value at certain strain levels.
+    While the def mts_column_post_process writes the analyzed data
+    onto '*.str' files, this module passes actually narrays. 
     
     Arguments
     =========
@@ -1354,6 +1445,7 @@ def nist_column_post_process(
         path+os.sep+datafile, skiprows=nhead, delimiter=delimt)
     data = data.T
 
+    ### 
     time = data[0] #[s]
     ext = data[1] #[mm]
     force = data[2] #[N]
@@ -1455,15 +1547,15 @@ def nist_column_post_process(
     ax.set_xlim(0.,)
 
     ## Determination of uniform strain range starts here. #
-    
+
     """
-    polynomial fitting of hardening rate  
-    sig = A eps^n                         
-    ln(sig) = n ln(eps) + ln(A)           
-    -> y = nx + a                         
+    polynomial fitting of hardening rate
+    sig = A eps^n
+    ln(sig) = n ln(eps) + ln(A)
+    -> y = nx + a
     
-    In addition, hardening rate will be:  
-    -> d(sig) = A * n eps**(n-1)* d(eps)  
+    In addition, hardening rate will be:
+    -> d(sig) = A * n eps**(n-1)* d(eps)
     dsig/deps =  A * n eps**(n-1)
     """
     lower_window = 0.05; upper_window=0.10

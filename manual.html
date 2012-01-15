@@ -1,6 +1,6 @@
 <html>
 <h1>Manual</h1>
-<h2> 1. Introduction </h2>
+<h2>1. Introduction </h2>
 <p> For the issues on file format, refer to chapter 2. </p>
 <p> Currently, there are two formats available. One of which is called
   'MTS' while the other is 'NIST'. Ths module str_str_r.py is, at first,
@@ -26,15 +26,47 @@
     epsu=0.10, delt=10) <br />
 </i></p>
 
-<h2> 2. Raw data file format</h2>
-<p> NIST mode is assumed to have three lines of header.
-  Example header as below: </p>
-<p><font color='gray'> Time,Extension,Load,Displacement (Strain 1),
+
+<h2>2. Prerequisites </h2>
+
+<h3>2-1. Raw data file format</h3>
+
+<h4> NIST </h4>
+<p> First of all, the raw data file name should be stricly given as
+  follows. The basic format of should be 'a_b_c.csv'. Each of the three
+  a, b and c regions should be the material label, the three digits
+  angle along which the sample is cut-off of, and the duplicate number,
+  respectively. </p>
+<p> NIST mode is assumed to have three lines of header. Example header
+  as below: </p>
+<p><font color='blue'> Time,Extension,Load,Displacement (Strain 1),
   Displacement (Strain 2) <br />
   (sec),(mm),(N),(mm),(mm) <br />
   12.6, 1.2 <br /> . <br /> . <br /> . <br />
 </font></p>
-<p> The last row contains two numbers,
-  each of which contains the width and the thickness,
-  respectively. </p>
+<p> The last row contains two numbers, each of which contains the width and the thickness,  respectively. </p>
+<p> It is assumed that the raw data file contains the time record, axial extension, load, and width displacement change. Both the axial extension and the width extension are assumed to be travel length so thus positive.</p>
+
+<h5> MTS </h4>
+<p> MTS mode names after the MTS system at GIFT. </p>
+
+<h2>3. Important Modules</h2>
+<p>  </p>
+
+<h2>4. Usage in details </h2>
+
+<h3>4.1 On a single file </h3>
+<p> We can produce a bunch of data from a single raw data file.  </p>
+
+<h3>4.2 On a single set of duplicates </h3>
+<p> Often times one conducts two or more duplicates of the sample in order to
+see how reliable the data is and to obtain the exprimental scatter. In such
+a case, one may want to analyze the mean values of the duplicates together with
+errorbar. </p>
+
+<h3>4.3 On a series of files </h3>
+
+
+<p> </p>
 </html>
+
