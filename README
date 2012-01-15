@@ -8,5 +8,4 @@ Uniaxial Tensile Test Analyzer
  2. Cautions
   2-1. File names should be 'A_B_C.csv' such that each corresponds to label, angle (3digits) and duplication number, respectively. For example, 'Asteel_045_3.csv' is the third sample tensiled along 45 degree from RD of Asteel.
   2-2. If one wants to analyze a series of files, the incremental angle is decided to be angles[1] - angles[0].
- 3.
- 
+
