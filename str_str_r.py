@@ -1,20 +1,21 @@
+"""
+****************************************************
+ Uniaxial stress-strain plotting and post processing
+ can be applied to any of format of data
+ Note: The extension to other file formats are 
+ worked out. Now MTS files also can be used   
+ in addition of Instron files (NIST)
+
+ Uniform format should be made. This has to be the 
+ next thing I should work out.(2011 OCT at NIST)   
+****************************************************
+"""
 import os, math, glob
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate as integrate
 
-print
-print '****************************************************'
-print ' Uniaxial stress-strain plotting and post processing'
-print ' can be applied to any of format of data  '
-print ' Note: The extension to other file formats are'
-print '  worked out. Now MTS files also can be used'
-print ' in addition of Instron files (NIST) '
-print
-print ' Uniform format should be made. This has to be the'
-print ' next thing I should work out.(2011 OCT at NIST)'
-print '****************************************************'
-print
+print __doc__
 
 """
 iext = 0
