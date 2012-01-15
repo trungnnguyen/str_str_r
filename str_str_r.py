@@ -46,7 +46,6 @@ def avgarea():
         flag = raw_input('type any than blank if you want to exit')
         if len(flag)==0: break
         pass
-        
 
 def param(ifile=False, filename='str_str_r.inp', mode=None):
     """
@@ -359,8 +358,6 @@ def pp(mode='MTS'):
                 iwid=iwid, switch=switch, coef=coef
                 )
             pass
-
-
         pass
     pass
 
@@ -586,9 +583,42 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
       r_lowel           : R value at the lower strain
       r_upel            : R value at the upper strain
 
+      ys1               : list containing ys_Teps
+      ys2               : list containning ys_Peps
+      ys1nl             : list containing ys_Teps
+      ys1n              : mean of ys1nl
+      ys2nl             : list containing ys_Peps
+      ys2n              : mean of ys2nl
+
+      R15A              : mean of r15accl
+      IR                : mean of InstRMeanl
+      IRSLOP            : mean of InstRslopel
+      YS1               : mean of ys1
+      YS2               : mean of ys2
+      SIGL              : mean of siglowel
+      SIGU              : mean of sigupel
+      R_LOWE            : mean of r_lowel
+
+      * master variables as below
+      ys1_mast          : list containing YS1
+      ys2_mast          : list containing YS2
+      ysu_mast          : list containing SIGU
+      ysl_mast          : list containing SIGL
+
     Dependents
     ==========
       glob, matplotlib.pyplot as plt, nist_column_post_process
+
+    Outputs
+    =======
+      Matplotlib figures
+      figR15a : Accummulative R-value vs angles
+      figIR   : Instantaneous R-value vs angles
+      figIRS  : Instantaneous R-value / time vs angles to see
+                if it decreases or increases.
+      figYS1  : ys_Teps, ys_Peps, sig_lowe vs angle
+      figYS2  : ys_Teps, ys_Peps, sig_upe  vs angle
+      figYSn  : ys1_mast / ys1n with errorbar
     """
     import glob
     import matplotlib.pyplot as plt
@@ -1420,9 +1450,10 @@ def nist_column_post_process(
     
     In addition, hardening rate will be:  
     -> d(sig) = A * n eps**(n-1)* d(eps)  
-    dsig/deps =  A * n eps**(n-1)         
+    dsig/deps =  A * n eps**(n-1)
+    """
     lower_window = 0.05; upper_window=0.10
-
+    """
     ** True stress-strain fitting
        1) sigp     : fitted stress
        2) hrp      : hrp = dsig/deps = A * n * strain ** (n-1)
