@@ -585,8 +585,10 @@ def mts_column_post_process(
     fig.savefig('temp_mst_colpp.pdf')
     pass # end of def mts_column_post_process
 
-def nist_inplane(ext='*.csv', ifig=92, order=3,
-                 epsl=0.05, epsu=0.10, delt=10, mod=None):
+def nist_inplane(
+    path=None,
+    ext='*.csv', ifig=92, order=3,
+    epsl=0.05, epsu=0.10, delt=10, mod=None):
     """
     Post-processes a series of in-plane tensile tests.
     Files from glob.glob('*.csv') are under process.
@@ -599,6 +601,7 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
 
     Arguments
     =========
+      path  = None (a name of directory containing the files)
       ext   = '*.csv'
       ifig  = 92
       order = 3
@@ -648,7 +651,7 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
 
     Dependents
     ==========
-      glob, matplotlib.pyplot as plt, nist_column_post_process
+      os, glob, matplotlib.pyplot as plt, nist_column_post_process
 
     Outputs
     =======
@@ -661,11 +664,14 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
       figYS2  : ys_Teps, ys_Peps, sig_upe  vs angle
       figYSn  : ys1_mast / ys1n with errorbar
     """
-    import glob
+    import os, glob
     import matplotlib.pyplot as plt
 
     # subject files whose extension is given as 'ext'
-    files = glob.glob(ext)
+    if path==None: files = glob.glob(ext)
+    elif type(path).__name__=='str':
+        files = glob.glob(
+            '%s%s%s'%(path,os.sep,ext))
 
     # sorting angles
     # In the below, it is assumed that the files have
@@ -723,8 +729,6 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
         for j in range(len(files)):
             if int(files[j].split('_')[1])==angles[i]:
                 FilesForThisAngle.append(files[j])
-                pass
-            pass
         print '     %i samples tested'%len(
             FilesForThisAngle)
 
@@ -844,7 +848,7 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
             index j on files on i-th angle
             """
             label=None
-            axR1a5a.errorbar(
+            axR15a.errorbar(
                 angles[i],R15A,fmt='+', yerr=np.std(r15accl),
                 color='red')
 
@@ -1325,6 +1329,7 @@ def nist_column_post_process(
     ifig = 54, #default plt figure id
     echo=False, modulus=None, #prescribable modulus [GPa]
     lowe=0.05, upe=0.15, #lower and upper strain for measuring r-value
+    __figdir__='figs'
     ):
     """
     NIST file's column post-process in details.
@@ -1349,6 +1354,7 @@ def nist_column_post_process(
       modulus  = None
       lowe     = 0.05 (A single r-value is calculated at this strain)
       upe      = 0.15 (A single r-value is calculated at this strain, too)
+      __figdir__ = 'figs' (figures are saved under this directory)
 
     Variables
     =========
@@ -1425,6 +1431,11 @@ def nist_column_post_process(
     import numpy as np
     import scipy.integrate as integrate
     import os
+    if not(os.path.isdir(__figdir__)):
+        print'%s does not exist, thus is made now.'%__figdir__
+        os.mkdir(__figdir__)
+        pass
+
     plt.ioff()
     path = os.getcwd()
 
@@ -1681,7 +1692,9 @@ def nist_column_post_process(
     ax.set_xlabel(r'$\varepsilon$', fontsize=20)
     ax.set_ylabel(r'$\dot{\varepsilon^{tot}}$')
     ax.legend(loc='best')
-    fig.savefig('str-SR_%s.pdf'%datafile.split('.')[0])
+    fig.savefig('%s%sstr-SR_%s.pdf'%(
+            __figdir__, os.sep, datafile.replace('/','_').split('.')[0])
+                )
     # hardening rate
     fig = plt.figure(ifig); fig.clf()
     ax  = fig.add_subplot(111)
@@ -1689,7 +1702,9 @@ def nist_column_post_process(
     ax.set_xlabel(r'$\varepsilon^{tot}$', fontsize=20)
     ax.set_ylabel(r'$d\sigma/d\varepsilon^{tot}$ [MPa]')
     ax.legend(loc='best')
-    fig.savefig('str-HR_%s.pdf'%datafile.split('.')[0])
+    fig.savefig('%s%sstr-HR_%s.pdf'%(
+            __figdir__, os.sep, datafile.replace('/','_').split('.')[0])
+                )
 
     #------------------------------------------------------------------
     # typical one value parameter calculation
@@ -1725,7 +1740,8 @@ def nist_column_post_process(
     R5_15 = np.array(R[lind:uind])
     InstRMean = np.array(R5_15).mean()
     InstRSTDV = np.array(R5_15).std()
-    if echo: print '%50s %5.3f'%('Mean Instantaneous R-value:',InstRMean)
+    if echo: print '%50s %5.3f'%(
+        'Mean Instantaneous R-value:', InstRMean)
 
     #R_lowe: R value at the given lowe strain (e.g., 0.05 strain)
     lind0 = lind; lind1 = lind + 1
@@ -1735,17 +1751,17 @@ def nist_column_post_process(
 
     #FlowStress_lowe: Flow stress at the given lowe strain
     y0 = sig[lind0]; y1 = sig[lind1]
-    FlowStress_lowe = (y1-y0)/(x1-x0) * (lowe-x0) + y0
+    FlowStress_lowe = (y1 - y0) / (x1 - x0) * (lowe-x0) + y0
 
     #R_upe : R value at the given upe strain
     uind0 = uind; uind1 = uind + 1
     x0 = le[uind0]; x1 = le[uind1]
     y0 = R[uind0]; y1 = R[uind1]
-    R_upe = (y1-y0)/(x1-x0) * (upe-x0) + y0
+    R_upe = (y1 - y0) / (x1 - x0) * (upe - x0) + y0
 
     #FlowStress_upe: Flow stress at the given upe strain
     y0 = sig[uind0]; y1 = sig[uind1]
-    FlowStress_upe = (y1-y0)/(x1-x0) * (upe-x0) + y0    
+    FlowStress_upe = (y1 - y0) / (x1 - x0) * (upe - x0) + y0    
 
     ## linear slope of the instantaneous r-value
     t0_15 = np.array(time[lind:uind])
@@ -1778,7 +1794,7 @@ def nist_column_post_process(
 
     y0 = sig[index-1];  y1 = sig[index]
     x0 = E_pl[index-1]; x1 = E_pl[index]
-    ys = (y1-y0)/(x1-x0) * (0.002 - x0) + y0
+    ys = (y1 - y0) / (x1 - x0) * (0.002 - x0) + y0
     if echo:
         print '%50s %5.3f [MPa]'%(
             'Plastic strain 0.2pct offset yield strength:', ys)
@@ -1797,9 +1813,12 @@ def nist_column_post_process(
     ax.set_xlabel(r'$\varepsilon^{pl}$')
     ax.set_ylabel(r'$\sigma$ [MPa]')
     ax.set_xlim(-0.01,)
-    fig.savefig('str-epl_%s.pdf'%datafile.split('.')[0])
-    fig.savefig('str-epl_%s.eps'%datafile.split('.')[0])
-
+    fig.savefig('%s%sstr-epl_%s.pdf'%(
+            __figdir__, os.sep,
+            datafile.replace('/','_').split('.')[0]))
+    fig.savefig('%s%sstr-epl_%s.eps'%(
+            __figdir__, os.sep,
+            datafile.replace('/','_').split('.')[0]))
     """
     Fig #2 R value vs plastic strain + InstRMean vs plastic strain
     'str-r_*.pdf, eps'
@@ -1814,9 +1833,14 @@ def nist_column_post_process(
     ax.errorbar((e0 + e1) / 2., InstRMean, yerr=InstRSTDV, fmt='o')
     ax.set_xlabel(r'$\varepsilon^{pl}$')
     ax.set_ylabel(r'$R^{inst}$')
-    fig.savefig('str-r_%s.pdf'%datafile.split('.')[0])
-    fig.savefig('str-r_%s.eps'%datafile.split('.')[0])
-
+    fig.savefig('%s%sstr-r_%s.pdf'%(
+            __figdir__, os.sep,
+            datafile.replace('/','_').split('.')[0])
+                )
+    fig.savefig('%s%sstr-r_%s.eps'%(
+            __figdir__, os.sep,
+            datafile.replace('/','_').split('.')[0])
+                )
     """
     Fig #3 True stress vs total strain
     'str-e_*.eps'
@@ -1828,8 +1852,10 @@ def nist_column_post_process(
     ax.set_xlabel(r'$\varepsilon^{tot}$')
     ax.set_ylabel(r'$\sigma$ [MPa]')    
     ax.set_xlim(-0.01,0.01)
-    fig.savefig('str-e_%s.eps'%datafile.split('.')[0])
-
+    fig.savefig('%s%sstr-e_%s.eps'%(
+            __figdir__, os.sep,
+            datafile.replace('/','_').split('.')[0])
+                )
     """
     Fig #4 Total strain vs time
     'e-time_*s.pdf'
@@ -1838,10 +1864,12 @@ def nist_column_post_process(
     fig.clf()
     ax = fig.add_subplot(111)
     ax.plot(time[::10],le[::10], 'o', mfc='None')
-    fig.savefig('e-time_%s.pdf'%datafile.split('.')[0])
+    fig.savefig('%s%se-time_%s.pdf'%(
+            __figdir__, os.sep,
+            datafile.replace('/','_').split('.')[0])
+                )
 
     return FlowStress_lowe, FlowStress_upe, R_lowe, R_upe, r_15pct_acc, InstRMean, InstRSTDV, InstRslope, ys_offset_fromTotalstrain, ys_offset_fromPlasticstrain
-
 
 def __nist_triangle_strip__(force):
     """
