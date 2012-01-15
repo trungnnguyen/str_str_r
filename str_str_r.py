@@ -555,6 +555,9 @@ def nist_inplane(ext='*.csv', ifig=92, order=3,
     referring to material label, angle in 3 digits and
     duplicate number, respectively.
 
+    Basically, it runs nist_column_post_process on the files
+    whose extension is matched.
+
     Arguments
     =========
       ext   = '*.csv'
@@ -1294,8 +1297,8 @@ def nist_column_post_process(
       R5_15             : R[lind:uind]
       InstRMean         : np.array(R5_15).mean()
       instRSTDV         : np.array(R5_15).std()
-      R_lowe            : R-value at lowe
-      R_upe             : R-value at upe
+      R_lowe            : R-value at lowe (lowe is given as 0.05 as a default)
+      R_upe             : R-value at upe  (upe is given as 0.15 as a default)
       FlowStress_lowe   : Stress at lowe
       FlowStress_upe    : Stress at upe
       t0_15             : time[lind:uind]
@@ -1314,6 +1317,17 @@ def nist_column_post_process(
       FlowStress_lowe, FlowStress_upe, R_lowe, R_upe,
       r_15pct_acc, InstRMean, InstRSTDV, InstRslope,
       ys_offset_fromTotalstrain, ys_offset_fromPlasticstrain
+
+    Figures
+    =======
+      1) True stress - plastic strain
+          'str_eps_*.pdf, eps'
+      2) R value vs plastic strain + InstRMean vs plastic strain
+          'str-r_*.pdf, eps'
+      3) True stress vs total strain
+          'str-e_*.eps'
+      4) Total strain vs time
+          'e-time_*s.pdf'
     """
     import matplotlib.pyplot as plt
     import numpy as np
@@ -1344,7 +1358,7 @@ def nist_column_post_process(
     force = data[2] #[N]
     l_disp = data[3] #[mm]
     w_disp = data[4] #[mm]
-    
+
     # adjustment in both l and w displacement
     # following Adam Creuziger -> GL is et to be 1.
     lbar = 24.89  # measured gauge length of axial extensometer
@@ -1584,7 +1598,6 @@ def nist_column_post_process(
     ax.legend(loc='best')
     fig.savefig('str-HR_%s.pdf'%datafile.split('.')[0])
 
-
     #------------------------------------------------------------------
     # typical one value parameter calculation
     # r-values, Yield strength, Ultimate tensile stress
@@ -1621,23 +1634,23 @@ def nist_column_post_process(
     InstRSTDV = np.array(R5_15).std()
     if echo: print '%50s %5.3f'%('Mean Instantaneous R-value:',InstRMean)
 
-    #R_lowe ??
+    #R_lowe: R value at the given lowe strain (e.g., 0.05 strain)
     lind0 = lind; lind1 = lind + 1
     x0 = le[lind0]; x1 = le[lind1]
     y0 = R[lind0];  y1 = R[lind1]
     R_lowe = (y1 - y0) / (x1 - x0) * (lowe - x0) + y0
 
-    #FlowStress_lowe
+    #FlowStress_lowe: Flow stress at the given lowe strain
     y0 = sig[lind0]; y1 = sig[lind1]
     FlowStress_lowe = (y1-y0)/(x1-x0) * (lowe-x0) + y0
 
-    #R_upe
+    #R_upe : R value at the given upe strain
     uind0 = uind; uind1 = uind + 1
     x0 = le[uind0]; x1 = le[uind1]
     y0 = R[uind0]; y1 = R[uind1]
     R_upe = (y1-y0)/(x1-x0) * (upe-x0) + y0
 
-    #FlowStress_upe
+    #FlowStress_upe: Flow stress at the given upe strain
     y0 = sig[uind0]; y1 = sig[uind1]
     FlowStress_upe = (y1-y0)/(x1-x0) * (upe-x0) + y0    
 
@@ -1657,10 +1670,8 @@ def nist_column_post_process(
             break
 
     # interpolatation
-    y0 = sig[index-1]
-    y1 = sig[index]
-    x0 = le[index-1]
-    x1 = le[index]
+    y0 = sig[index - 1]; y1 = sig[index]
+    x0 = le[index - 1] ; x1 = le[index]
     ys = (y1 - y0) / (x1 - x0) * (0.002 - x0) + y0
     if echo:
         print '%50s %5.3f [MPa]'%(
@@ -1671,19 +1682,20 @@ def nist_column_post_process(
         if E_pl[i]>0.002:
             index = i
             break
-        pass
 
-    y0 = sig[index-1]
-    y1 = sig[index]
-    x0 = E_pl[index-1]
-    x1 = E_pl[index]
+    y0 = sig[index-1];  y1 = sig[index]
+    x0 = E_pl[index-1]; x1 = E_pl[index]
     ys = (y1-y0)/(x1-x0) * (0.002 - x0) + y0
     if echo:
         print '%50s %5.3f [MPa]'%(
             'Plastic strain 0.2pct offset yield strength:', ys)
     ys_offset_fromPlasticstrain = ys
 
-    ## save figures....
+    # Save figures.
+    """
+    Fig #1 True stress - plastic strain
+    'str_eps_*.pdf, eps'
+    """
     R = np.array(R); SR = np.array(SR); HR = np.array(HR)
     fig = plt.figure(ifig)
     fig.clf()
@@ -1693,7 +1705,12 @@ def nist_column_post_process(
     ax.set_ylabel(r'$\sigma$ [MPa]')
     ax.set_xlim(-0.01,)
     fig.savefig('str-epl_%s.pdf'%datafile.split('.')[0])
+    fig.savefig('str-epl_%s.eps'%datafile.split('.')[0])
 
+    """
+    Fig #2 R value vs plastic strain + InstRMean vs plastic strain
+    'str-r_*.pdf, eps'
+    """
     fig = plt.figure(ifig)
     fig.clf()
     ax = fig.add_subplot(111)
@@ -1705,7 +1722,12 @@ def nist_column_post_process(
     ax.set_xlabel(r'$\varepsilon^{pl}$')
     ax.set_ylabel(r'$R^{inst}$')
     fig.savefig('str-r_%s.pdf'%datafile.split('.')[0])
+    fig.savefig('str-r_%s.eps'%datafile.split('.')[0])
 
+    """
+    Fig #3 True stress vs total strain
+    'str-e_*.eps'
+    """
     fig = plt.figure(ifig)
     fig.clf()
     ax = fig.add_subplot(111)
@@ -1713,8 +1735,12 @@ def nist_column_post_process(
     ax.set_xlabel(r'$\varepsilon^{tot}$')
     ax.set_ylabel(r'$\sigma$ [MPa]')    
     ax.set_xlim(-0.01,0.01)
-    fig.savefig('str-e_%s.pdf'%datafile.split('.')[0])
+    fig.savefig('str-e_%s.eps'%datafile.split('.')[0])
 
+    """
+    Fig #4 Total strain vs time
+    'e-time_*s.pdf'
+    """
     fig = plt.figure(ifig)
     fig.clf()
     ax = fig.add_subplot(111)
