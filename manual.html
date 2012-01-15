@@ -1,23 +1,39 @@
 <html>
 <h1>Manual</h1>
-<h2> 1. Pre-requisites </h2>
+<h2> 1. Introduction </h2>
 <p> For the issues on file format, refer to chapter 2. </p>
+<p> Currently, there are two formats available. One of which is called
+  'MTS' while the other is 'NIST'. Ths module str_str_r.py is, at first,
+  created for analyzing the raw data files from the MTS system at GIFT.
+  Later on, to cope with the raw file for the raw data files from NIST,
+  mode 'NIST' was added. During the stay at NIST, the incremental angle
+  for in-plane tensile bar decided to be 15 degree, which eventually led to
+  far more number of files for one kind of material. Therefore, a different
+  way of post-processing the data was necessary. On the other hand, the
+  forcus was on the the in-plane variations of the r-value and the yield
+  stress. Therefore, some additional features were necessary to look at
+  such features more intensely and, at the same time, succintly. Error
+  bar was also necessary to see how experimental scatter is like, which
+  provide a systematic view on the aspects of both experiments and and
+  modeling.
+</p>
+
 <p> File format: Either the csv from the NIST, or MTS files.
   In the NIST case, def nist_inplane can be used. </p>
-<i>
-  >>> from str_str_r import nist_inplane as ni <br />
-  >>> ni(ext ='*.csv', ifig=92, order=3, epsl=0.05,
-  epsu=0.10, delt=10) <br />
-</i>
+<p><i> <!-- Below is an example -->
+    >>> from str_str_r import nist_inplane as ni <br />
+    >>> ni(ext ='*.csv', ifig=92, order=3, epsl=0.05,
+    epsu=0.10, delt=10) <br />
+</i></p>
 
 <h2> 2. Raw data file format</h2>
 <p> NIST mode is assumed to have three lines of header.
   Example header as below: </p>
-<p> Time,Extension,Load,Displacement (Strain 1),
+<p><font color='gray'> Time,Extension,Load,Displacement (Strain 1),
   Displacement (Strain 2) <br />
   (sec),(mm),(N),(mm),(mm) <br />
   12.6, 1.2 <br /> . <br /> . <br /> . <br />
-</p>
+</font></p>
 <p> The last row contains two numbers,
   each of which contains the width and the thickness,
   respectively. </p>
