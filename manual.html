@@ -1,0 +1,19 @@
+<html>
+<h1>Manual</h1>
+<h2> 1. Pre-requisites </h2>
+
+<p>File format: Either the csv from the NIST, or MTS files. In the NIST case, def nist_inplane can be used. </p>
+<i> >>> from str_str_r import nist_inplane as ni <br />
+  >>> ni(ext ='*.csv', ifig=92, order=3, epsl=0.05, epsu=0.10, delt=10) <br /> </i>
+
+<h2> 2. Raw data file format</h2>
+  <p> NIST mode is assumed to have three lines of header. Example header as below: </p>
+<p> Time,Extension,Load,Displacement (Strain 1),Displacement (Strain 2) <br />
+  (sec),(mm),(N),(mm),(mm) <br />
+  12.6, 1.2 <br />
+  . <br />
+  . <br />
+  . <br />
+  </p>
+  <p> The last row contains two numbers, each of which contains the width and the thickness, respectively. </p>
+</html>
