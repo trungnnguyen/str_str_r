@@ -1,0 +1,10 @@
+0.95     #thickness
+50       #Gauge length
+12.5     #Width
+10       #Lower stress
+80       #Upper stress
+20       #delt
+force    #Either force or stress
+kN       # Either kN or N
+
+
