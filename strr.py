@@ -143,7 +143,7 @@ def param(ifile=False, filename='strr.inp', mode=None):
 
         tmp = []
         for i in range(8):
-            tmp.append(myline[i].split(',')[1])
+            tmp.append(myline[i].split()[0])
 
         tmp[0] = float(tmp[0])
         tmp[1] = float(tmp[1])
@@ -154,13 +154,17 @@ def param(ifile=False, filename='strr.inp', mode=None):
 
         print 't, L0, W0, area = ', tmp[0], tmp[1], tmp[2], tmp[0]*tmp[2]
         f.close()
-        return tmp[0],tmp[1],tmp[2],tmp[0]*tmp[2],tmp[3],tmp[4],tmp[5],tmp[6],tmp[7]
+        ##     t,     L0,    W0,    area,         ls,   ,us,    delt,  ifort_str, unit
+        return tmp[0],tmp[1],tmp[2],tmp[0]*tmp[2],tmp[3],tmp[4],tmp[5],tmp[6],    tmp[7]
     pass # End of def param
 
 def column(ifile=False, filename='strr.inp'):
     """
     Read column data's format (5 coloums from MTS)
     to find which column corresponds to which physical term.
+    * if time is not available, time is estimated back by input
+      data acqusition rate under assumption that it is preserved
+      to be constant during the entire test.
 
     Arguments
     =========
@@ -171,7 +175,7 @@ def column(ifile=False, filename='strr.inp'):
     ==============
       switch : 'y' (Axial value is given as extension [mm])
               'n' (Axial engineering strain [mm/mm])
-      itime  : Column # of time [s]
+      itime  : Column # of time [s] (not available when itime=-1)
       iext   : Column # of axial extension
       ifor   : Column # of standard force [kN]
       iwid   : column # of change in width [mm]
@@ -186,11 +190,15 @@ def column(ifile=False, filename='strr.inp'):
             switch = raw_input("or Axial engineering Strain[mm/mm] ('n') >>")
             if switch == 'y': break
             elif switch =='n': break
-            else: print "Wrong answer: answer should be 'y' or 'n'"
-            pass
+            else:
+                print "Wrong answer:",
+                print " the answer should be either 'y' or 'n'"
 
         ## data file column order determincation
+        print "If time column is not available, type 'n' "
         itime = raw_input('Column # of time [s] (default=0) >>')
+        if itime.upper()=='N':
+            itime=='-1'
         if switch=='y':
             iext = raw_input('Col # of axial extension[mm] (default = 1) >>')
         else: iext = raw_input('Col # of axial strain[mm/mm] (default = 1) >>')
@@ -199,7 +207,8 @@ def column(ifile=False, filename='strr.inp'):
 
         ## gives the default if a blank string is passed
         if len(itime) == 0: itime = 0
-        else: itime = int(itime)
+        else:
+            if itime!='n': itime = int(itime)
         if len(iext) == 0: iext = 1
         else: iext = int(iext)
         if len(ifor) == 0: ifor = 3
@@ -207,27 +216,22 @@ def column(ifile=False, filename='strr.inp'):
         if len(iwid) == 0: iwid = 2
         else: iwid = int(iwid)
         return itime, iext, ifor, iwid, switch
-    
-    elif ifile==True:
-        # when input file (strr.inp) is given.
+
+    elif ifile==True: 
+        # When input file, "strr.inp", is given.
         f = open(filename, 'r')
-        lines = f.read()
-        lines = lines.split('\n')
-        lines = lines[10:len(lines)]
+        lines = f.readlines()
+        lines = lines[9:] # Read from 9th row
         tmp_ = []
-        for i in range(len(lines)):
-            try: lines[i].split(',')[1]
-            except IndexError: pass
-            else: tmp_.append(lines[i].split(',')[1])
-        for i in range(len(tmp_)):
-            try: int(tmp_[i])
-            except ValueError: pass
-            else: tmp_[i] = int(tmp_[i])
+        for i in range(5):
+            tmp_.append(lines[i].split()[0])
+        for i in range(4): #The last one is switch: 'n' or 'y'
+            tmp_[i] = int(tmp_[i])
         f.close()
         ## thickness, L0, W2, lower stress, upper stress,
         ## delt, ifor_str, force unit (N or kN)
         #itime, iext, ifor, iwid, switch = column(ifile=ifile)
-        return tmp_[1], tmp_[2], tmp_[3], tmp_[4], tmp_[0]
+        return tmp_[0], tmp_[1], tmp_[2], tmp_[3], tmp_[4]
     raise IOError, 'unexpected case'
 
 def delimiter():
@@ -291,12 +295,13 @@ are
 a = t * L0 # unit: mm^2
 """
 
-def pp(mode='MTS'):
+def pp(mode='MTS', mod=None):
     """
     Post-process the uniaxial tension tests
 
     Arguments:
-    mode='MTS'
+    mode = 'MTS'
+    mod  = None
 
     Dependents
     ==========
@@ -309,17 +314,18 @@ def pp(mode='MTS'):
     extension = raw_input('Extension (e.g. txt or csv .. etc)  >>')
     if len(path) == 0: path = os.getcwd()
     else:
-        oldpath = os.getcwd()
-        os.chdir(path)
+        path = os.getcwd()+os.sep+path
+        # oldpath = os.getcwd()
+        # os.chdir(path)
     try: extension.split('.')[1]
     except:
         ## files : list of input raw data files
         if len(extension)==0:
             files = glob.glob(
-                '*.TRA') + glob.glob(
-                '*.TXT') + glob.glob('*.CSV')
-            pass
-        else: files = glob.glob('*.' + extension)
+                '%s%s*.TRA'%(path, os.sep)) + glob.glob(
+                '%s%s*.TXT'%(path, os.sep)) + glob.glob(
+                    '%s%s*.CSV'%(path, os.sep))
+        else: files = glob.glob('%s%s*.%s'%(path, os.sep, extension))
     else:
         files = [extension]
         pass
@@ -375,7 +381,8 @@ def pp(mode='MTS'):
                 us=us, delt=delt, ifor_str=ifor_str, unit=unit,
                 path=path, delimt = delimt,
                 itime=itime, iext=iext, ifor=ifor,
-                iwid=iwid, switch=switch, coef=coef                
+                iwid=iwid, switch=switch, coef=coef,
+                modulus=mod
                 )
         else:
             mts_column_post_process(
@@ -386,7 +393,8 @@ def pp(mode='MTS'):
                 ifor_str=ifor_str, unit=unit,
                 path=path, delimt = delimt,
                 itime=itime, iext=iext, ifor=ifor,
-                iwid=iwid, switch=switch, coef=coef
+                iwid=iwid, switch=switch, coef=coef,
+                mod=mod
                 )
     pass # end of def pp
 
@@ -394,6 +402,7 @@ def mts_column_post_process(
     datafile, t, L0, W0, area,
     ls, us, delt, ifor_str, unit,
     path, delimt, itime, iext, ifor, iwid, switch, coef,
+    mod
     ):
     """
     The old DATA file's column post process in details.
@@ -415,29 +424,50 @@ def mts_column_post_process(
     path     : path where the data files are located
     delimt   : delimt between columns
 
-    itime    : Column # for time
+    itime    : Column # for time (not available when -1)
     iext     : Column # for axial extension
     ifor     : Column # for axial force
     iwid     : Column # for width
     switch   : 
     coef     : Coefficient when converting force to stress.
                Refer to the code itself for details.
+    mod      : Modulus. If given, so is enforced the actual modulus.
+
+    Variables
+    =========
+    E_l : logarithmic axial strain
+    E_engi : engineering axial strain
+    engiw: Engineering width strain
+    
+    
+    Dependents
+    ==========
+    matplotlib.pyplot as plt, os, scipy.integrate as integrate
     """
     import matplotlib.pyplot as plt
     import os
+    import scipy.integrate as integrate
     plt.ioff()
 
-    print 'filename = ', datafile
-        #print path+'\\'+files[i]
-    f = open(path + os.sep + datafile, 'r')
+    ## When time is not available, calculates it
+    ## by frequency.
+    if itime==-1:
+        print 'itime is not available'
+        print 'The time needs be calculated'
+        print 'by the acqusition frequency'
+        print 'Type the acqusition frequency'
+        acqf = raw_input('[Hz = /time] >>>')
+        acqf = float(acqf)
+        
+    print 'filename = ', datafile # raw data file name
+
+    f = open(datafile, 'r')
     source = f.read()
     f.close()
     fout = open(
-        path + os.sep + datafile.split('.')[0] + '.str',
-        'w'
-        ) # write file
+        datafile.split('.')[0] + '.str', 'w' ) # write file
 
-    ## new
+    ## new header ------------------------------------
     fout.writelines('%13s %13s %13s %13s '%(
             'Strain','E_pl','Stress','Plastic_Work'))
     fout.writelines('%13s %13s %13s %13s '%(
@@ -451,10 +481,11 @@ def mts_column_post_process(
     fout.writelines('%13s %13s %13s \n'%(
             'NA','NA','NA'))
     ##------------------------------------------------
-                
+
     lines = source.split('\n')
     header = lines[0] # no way!
-    E_l = []
+    E_l = [] #logarithmic axial strain
+    E_engi = [] #engineering axial strain
     E_pl = []
     S = [] #True stress
     engs = []#engineering stress
@@ -463,7 +494,13 @@ def mts_column_post_process(
     R = []
     time = []
 
+    print '\n\n*************************************************'
+    print 'Width value is given as a tranveling value such that '
+    print 'it assumes that change of width is positive'
+    print '*****************************************************\n\n'
+
     i = 0
+    tcc = 0.
     for j in range(len(lines)):
         try:
             cline = map(float,lines[j].split(delimt))
@@ -471,25 +508,25 @@ def mts_column_post_process(
             pass
         else:
             ext = cline[iext]
-            #print ext
-            #raw_input()
             force = cline[ifor]
             chg_wid = cline[iwid]
-            tcc = cline[itime]
+
+            if itime==-1:
+                tcc = tcc + 1./acqf
+            else: tcc = cline[itime]
             if switch == 'y':  #axial extension [mm]
                 el = math.log(ext / L0 + 1)   #true strain
+                engie = ext/L0
             elif switch =='n': #axial strain    [mm/mm]
                 el = math.log(ext + 1)        #true strain
-                pass
+                engie = ext
             E_l.append(el)
-            print '\n\n*************************************************'
-            print 'Width value is given as a tranveling value such that '
-            print 'it assumes that change of width is positive'
-            print '*****************************************************\n\n'
-
+            E_engi.append(engie)
+            
+            ## 
             engiw = - chg_wid / W0 #negative width strain
             ew = math.log(1 + engiw) #convert into true strain
-            E_w.append(ew)
+            E_w.append(ew)   # logarithmic width strain
             time.append(tcc)
 
             if ifor_str == 'force':
@@ -510,15 +547,17 @@ def mts_column_post_process(
             S.append(stress)
             engs.append(engi)
                 #print S[0:10]
+            # logarithmic thickness strain
             E_t.append(-(E_l[i]+E_w[i])) #thickness strain is negative
-            try: R_ = E_w[i]/E_t[i]
+            try: R_ = E_w[i]/E_t[i] #accumulative r-value
             except ZeroDivisionError:
                 R_ = 0.
             R.append(R_)
             i = i + 1
         pass # end of each lines in the datafile
 
-    mod = slope(x=E_l, y=S, upy=us, lowy=ls)
+    if mod==None: mod = slope(x=E_l, y=S, upy=us, lowy=ls)
+    else: mod = mod    
     print 'Modulus : ', mod/10**3,' GPa'
 
     ## plastic strain
@@ -527,48 +566,57 @@ def mts_column_post_process(
         if E_p < 0:E_pl.append(0)
         else : E_pl.append(E_p)
     ## 
-    
-    wrk = integrate.cumtrapz(y=S, x=E_pl) # work integration
-    for i in range(len(E_pl)-1):
-        try: wrk[i]
-        except IndexError: pass
-        else:
-            if i-delt > 1:
-                if i+delt < int(len(time)- 2):
-                    try: sr = __slope__(
-                        x=time[i-delt:i+delt],
-                        y=E_pl[i-delt:i+delt])
-                    except TypeError:
-                        print 'i=', i
-                        print 'delt=',delt
-                        print 'i-delt=', i-delt
-                        print 'i+delt=', i+delt
-                        print 'time[0:3]=',time[0:3]
-                        print 'E_pl[0:3]=',E_pl[0:3]
-                        raw_input()
-                        print time[i-delt:i+delt]
-                        print E_pl[i-delt:i+delt]
-                    hr = __slope__(x=E_l[i-delt:i+delt],
-                                   y=S[i-delt:i+delt])
-                    Rv = __slope__(x=E_t[i-delt:i+delt],
-                                   y=E_w[i-delt:i+delt]) #E_w[i]/E_t[i]
-                    er_t = __slope__(x=time[i-delt:i+delt],
-                                     y=E_t[i-delt:i+delt])
-                    er_w = __slope__(x=time[i-delt:i+delt],
-                                     y=E_w[i-delt:i+delt])
-                else: sr, hr, Rv, er_t, er_w = 0., 0., 0., 0., 0.
-            else: sr, hr, Rv, er_t, er_w = 0., 0., 0., 0., 0.
 
-            ## strain, e_pl, stress, plastic_work, time, pl-SR, dsig/dEps, 'R-values',
-            ## EngiStress, E_pl_trans, ER_pl_Trans
-            fout.write('%13.6e %13.6e %13.6e %13.6e %13.6e'%(
-                    E_l[i], E_pl[i], S[i], wrk[i], time[i]))
-            if any([sr,hr][i]==0. for i in range(2)):
-                fout.writelines(' %13s %13s %13s'%('NA','NA','NA'))
-            else: fout.write(' %13.6e %13.6e %13.6e'%(sr, hr, Rv))
-            fout.write(' %13.6e %13.6e %13.6e\n'%(engs[i],E_w[i], er_w)
-                       ) #engi stress, E_pl_wdith, Strain Rate_w
-            #fout.write(' %13.6e %13.6e %13.6e\n'%(engs[i],E_w[i], er_t))
+    wrk = integrate.cumtrapz(y=S, x=E_pl) # Plastic work integration
+    wrk = np.concatenate(([np.NAN], wrk), axis=0)
+
+    fout_ = open(datafile.split('.')[0]+'.str', 'w')
+    ## use __windowed_rate_values__
+    R, SR, HR, HRENGI = __windowed_rate_values__(
+        fout=fout_, le= E_l, engie = E_engi,
+        sig=S, sig_engi=engs, te=E_t, we=E_w,
+        time=time, E_pl=E_pl, delt = delt, wrk = wrk)
+
+    # for i in range(len(E_pl)-1):
+    #     try: wrk[i]
+    #     except IndexError: pass
+    #     else:
+    #         if i-delt > 1:
+    #             if i+delt < int(len(time)- 2):
+    #                 try: sr = __slope__(
+    #                     x=time[i-delt:i+delt],
+    #                     y=E_pl[i-delt:i+delt])
+    #                 except TypeError:
+    #                     print 'i=', i
+    #                     print 'delt=',delt
+    #                     print 'i-delt=', i-delt
+    #                     print 'i+delt=', i+delt
+    #                     print 'time[0:3]=',time[0:3]
+    #                     print 'E_pl[0:3]=',E_pl[0:3]
+    #                     raw_input()
+    #                     print time[i-delt:i+delt]
+    #                     print E_pl[i-delt:i+delt]
+    #                 hr = __slope__(x=E_l[i-delt:i+delt],
+    #                                y=S[i-delt:i+delt])
+    #                 Rv = __slope__(x=E_t[i-delt:i+delt],
+    #                                y=E_w[i-delt:i+delt]) #E_w[i]/E_t[i]
+    #                 er_t = __slope__(x=time[i-delt:i+delt],
+    #                                  y=E_t[i-delt:i+delt])
+    #                 er_w = __slope__(x=time[i-delt:i+delt],
+    #                                  y=E_w[i-delt:i+delt])
+    #             else: sr, hr, Rv, er_t, er_w = 0., 0., 0., 0., 0.
+    #         else: sr, hr, Rv, er_t, er_w = 0., 0., 0., 0., 0.
+
+    #         ## strain, e_pl, stress, plastic_work, time, pl-SR, dsig/dEps, 'R-values',
+    #         ## EngiStress, E_pl_trans, ER_pl_Trans
+    #         fout.write('%13.6e %13.6e %13.6e %13.6e %13.6e'%(
+    #                 E_l[i], E_pl[i], S[i], wrk[i], time[i]))
+    #         if any([sr,hr][i]==0. for i in range(2)):
+    #             fout.writelines(' %13s %13s %13s'%('NA','NA','NA'))
+    #         else: fout.write(' %13.6e %13.6e %13.6e'%(sr, hr, Rv))
+    #         fout.write(' %13.6e %13.6e %13.6e\n'%(engs[i],E_w[i], er_w)
+    #                    ) #engi stress, E_pl_wdith, Strain Rate_w
+    #         #fout.write(' %13.6e %13.6e %13.6e\n'%(engs[i],E_w[i], er_t))
 
     fig = plt.figure(1)
     ax = fig.add_subplot(111)
@@ -581,7 +629,7 @@ def mts_column_post_process(
     plt.ylim(0,max(R)*1.1)
     plt.xlim(0,max(E_l)*1.1)
     fout.close()
-    print 'the figure is saved to %s'*'temp_mst_colpp.pdf'
+    print 'the figure is saved to %s'%'temp_mst_colpp.pdf'
     fig.savefig('temp_mst_colpp.pdf')
     pass # end of def mts_column_post_process
 
@@ -1223,13 +1271,13 @@ def __windowed_rate_values__(fout, le, engie, sig, sig_engi, te, we, time, E_pl,
 
     Arguments
     ---------
-      fout     : 'open' object for saving data
-      le       : logarithmic strain
-      engie    : engineering strain
+      fout     : 'open' object for saving data, it should be clean new file.
+      le       : logarithmic strain (+)
+      engie    : engineering strain (+)
       sig      : True stress
       sig_engi : engineering stress
-      te       : thickness strain
-      we       : width strain
+      te       : thickness strain   (-)
+      we       : width strain       (-)
       time     : time
       E_pl     : plastic strain
       delt     : 1/2 size of the window
@@ -1315,9 +1363,9 @@ def __windowed_rate_values__(fout, le, engie, sig, sig_engi, te, we, time, E_pl,
             Rv[i] = np.NAN
             er_t[i] = np.NAN
             er_w[i] = np.NAN
-            sr[i] = np.NAN #strain rate
-            srp[i] = np.NAN #plastic strain rate
-    
+            sr[i] = np.NAN  # strain rate
+            srp[i] = np.NAN # plastic strain rate
+
     # transposed data
     data = np.array(
         [le, E_pl, sig, wrk, time,
@@ -1459,7 +1507,7 @@ def nist_column_post_process(
     f = open(path + os.sep + datafile, 'r')
     header = f.readlines()[:nhead]; f.close()
 
-    tmpa, tmpb = map(float,header[-1].split(','))
+    tmpa, tmpb = map(float, header[-1].split(','))
 
     if W0==None: W0 = tmpa
     if t==None: t = tmpb
@@ -1503,7 +1551,18 @@ def nist_column_post_process(
     W0 = wdisp0 + wbar
     engie = (l_disp - ldisp0) / L0
     engiwe= (w_disp - wdisp0) / W0
-    engiwe = -1 * engiwe
+    # Width strain should be negative.
+    # The value should be multiplied by -1, 
+    # since change in width is given.
+    engiwe = -1 * engiwe 
+    if engiwe[-1]>0.:
+        print "width engineering strain is supposed to be minus."
+        print "check if everthing is okay."
+        raise IOError
+    if engie[-1]<0.:
+        print "axial engineering strain is suppoed to be positive."
+        print "check if everyhing is okay"
+        raise IOError
     # ------------------------------------------------------------#
 
     ## strain ----------------------------------------------------#
@@ -1522,13 +1581,19 @@ def nist_column_post_process(
     if echo: print '%50s %5.3f [GPa]'%(
         'Tangent Modulus calculated: ', mod / 10**3)
     if modulus!=None and modulus<50*10**3:
-        print' modulus is supposed to be [MPa] unit'
+        print 'Modulus is supposed to be in [MPa] unit.'
+        print 'But the on you typed in is unexpectedly small.'
+        if raw_input("To stop type 'n'>>>").upper()=='N':
+            raise IOError
+    if modulus!=None and echo:
+        print '%50s %5.3f [GPa]'%(
+            'Tangent Modulus Given ', mod / 10**3)
 
     ## plastic strain ----------------------------------- #
     E_pl = []
     for i in range(len(le)): #true axial strain
-        if modulus!=None: temp = le[i] - sig[i]/modulus
-        else: temp = le[i] - sig[i]/mod
+        if modulus!=None: temp = le[i] - sig[i] / modulus
+        else: temp = le[i] - sig[i] / mod
         if temp<0: E_pl.append(0.)
         else: E_pl.append(temp)
     E_pl = np.array(E_pl)
@@ -1547,7 +1612,6 @@ def nist_column_post_process(
     fout = open(
         path+os.sep + datafile.split('.')[0] + '.str',
         'w')
-
     # R-value, strain rate, hardeing rate, engineering hardening rate
     R, SR, HR, HRENGI = __windowed_rate_values__(
         fout=fout, le=le, engie=engie,
