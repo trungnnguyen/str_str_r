@@ -134,7 +134,7 @@ def param(ifile=False, filename='strr.inp', mode=None):
 
     elif ifile==True:
         """
-        Use saved geogmetry, ifort_str, and units
+        Use saved sample dimensions, ifort_str, and units
         """
         f = open(filename, 'r')
         lines = f.read()
