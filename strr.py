@@ -585,6 +585,38 @@ def mts_column_post_process(
     fig.savefig('temp_mst_colpp.pdf')
     pass # end of def mts_column_post_process
 
+def __uniform_strain_range__(
+    force,
+    engineering_stress,
+    true_stress,
+    true_strain,
+    ):
+    """
+    Provide the trim_index based on the relevant
+    judgement upon the stress-strain curve.
+    """
+
+    # judegement 1
+    lower_window = 0.05; upper_window=0.10    
+    """
+    polynomial fitting of hardening rate
+    sig = A eps^n
+    ln(sig) = n ln(eps) + ln(A)
+    -> y = nx + a
+    
+    In addition, hardening rate will be:
+    -> d(sig) = A * n eps**(n-1)* d(eps)
+    dsig/deps =  A * n eps**(n-1)
+
+    ** True stress-strain fitting
+       1) sigp     : fitted stress
+       2) hrp      : hrp = dsig/deps = A * n * strain ** (n-1)
+       3) A        : The coefficient A
+       4) exponent : The exponent n
+    """    
+    return trim_index
+    
+
 def nist_inplane(
     path=None,
     ext='*.csv', ifig=92, order=3,
