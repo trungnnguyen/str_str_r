@@ -658,6 +658,7 @@ def nist_inplane(
       Matplotlib figures
       figR15a : Accummulative R-value vs angles
       figIR   : Instantaneous R-value vs angles
+           (red: InstRMeanl.mean()), 
       figIRS  : Instantaneous R-value / time vs angles to see
                 if it decreases or increases.
       figYS1  : ys_Teps, ys_Peps, sig_lowe vs angle
@@ -1337,7 +1338,7 @@ def nist_column_post_process(
     Uniaxial yield stress, R-value at certain strain levels.
     While the def mts_column_post_process writes the analyzed data
     onto '*.str' files, this module passes actually narrays. 
-    
+
     Arguments
     =========
       datafile = None
@@ -1379,6 +1380,7 @@ def nist_column_post_process(
        ln(sig) = n ln(eps) + ln(A)
        -> y = nx + a
       ## -----------------------------------------------------------
+
       sigp              : fitted stress
       hrp               : fitted hardening rate (dsig/deps)
       A                 : The coefficient A
@@ -1689,8 +1691,8 @@ def nist_column_post_process(
     fig = plt.figure(ifig); fig.clf()
     ax  = fig.add_subplot(111)
     ax.semilogy(le, SR, label='strain rate')
-    ax.set_xlabel(r'$\varepsilon$', fontsize=20)
-    ax.set_ylabel(r'$\dot{\varepsilon^{tot}}$')
+    ax.set_xlabel(r'$\varepsilon$', dict(fontsize=20))
+    ax.set_ylabel(r'$\dot{\varepsilon^{tot}}$', dict(fontsize=20))
     ax.legend(loc='best')
     fig.savefig('%s%sstr-SR_%s.pdf'%(
             __figdir__, os.sep, datafile.replace('/','_').split('.')[0])
@@ -1699,8 +1701,8 @@ def nist_column_post_process(
     fig = plt.figure(ifig); fig.clf()
     ax  = fig.add_subplot(111)
     ax.semilogy(le, HR, label=r'$d\sigma/d\varepsilon^{tot}$')
-    ax.set_xlabel(r'$\varepsilon^{tot}$', fontsize=20)
-    ax.set_ylabel(r'$d\sigma/d\varepsilon^{tot}$ [MPa]')
+    ax.set_xlabel(r'$\varepsilon^{tot}$', dict(fontsize=20))
+    ax.set_ylabel(r'$d\sigma/d\varepsilon^{tot}$ [MPa]', dict(fontsize=20))
     ax.legend(loc='best')
     fig.savefig('%s%sstr-HR_%s.pdf'%(
             __figdir__, os.sep, datafile.replace('/','_').split('.')[0])
@@ -1810,8 +1812,8 @@ def nist_column_post_process(
     fig.clf()
     ax = fig.add_subplot(111)
     ax.plot(E_pl[::10], sig[::10], 'o', mfc='None')
-    ax.set_xlabel(r'$\varepsilon^{pl}$')
-    ax.set_ylabel(r'$\sigma$ [MPa]')
+    ax.set_xlabel(r'$\varepsilon^{pl}$', dict(fontsize=20))
+    ax.set_ylabel(r'$\sigma$ [MPa]', dict(fontsize=20))
     ax.set_xlim(-0.01,)
     fig.savefig('%s%sstr-epl_%s.pdf'%(
             __figdir__, os.sep,
@@ -1831,8 +1833,8 @@ def nist_column_post_process(
     e0 = E_pl[lind]; e1 = E_pl[uind]
     ax.plot([e0,e1], [InstRMean, InstRMean], '--')
     ax.errorbar((e0 + e1) / 2., InstRMean, yerr=InstRSTDV, fmt='o')
-    ax.set_xlabel(r'$\varepsilon^{pl}$')
-    ax.set_ylabel(r'$R^{inst}$')
+    ax.set_xlabel(r'$\varepsilon^{pl}$', dict(fontsize=20))
+    ax.set_ylabel(r'$R^{inst}$', dict(fontsize=20))
     fig.savefig('%s%sstr-r_%s.pdf'%(
             __figdir__, os.sep,
             datafile.replace('/','_').split('.')[0])
@@ -1849,8 +1851,8 @@ def nist_column_post_process(
     fig.clf()
     ax = fig.add_subplot(111)
     ax.plot(le[::10], sig[::10], 'o', mfc='None')
-    ax.set_xlabel(r'$\varepsilon^{tot}$')
-    ax.set_ylabel(r'$\sigma$ [MPa]')    
+    ax.set_xlabel(r'$\varepsilon^{tot}$', dict(fontsize=20))
+    ax.set_ylabel(r'$\sigma$ [MPa]', dict(fontsize=20))
     ax.set_xlim(-0.01,0.01)
     fig.savefig('%s%sstr-e_%s.eps'%(
             __figdir__, os.sep,
@@ -1864,6 +1866,8 @@ def nist_column_post_process(
     fig.clf()
     ax = fig.add_subplot(111)
     ax.plot(time[::10],le[::10], 'o', mfc='None')
+    ax.set_xlabel('Time [s]', dict(fontsize=20))
+    ax.set_ylabel(r'$\varepsilon^{tot}$', dict(fontsize=20))
     fig.savefig('%s%se-time_%s.pdf'%(
             __figdir__, os.sep,
             datafile.replace('/','_').split('.')[0])
