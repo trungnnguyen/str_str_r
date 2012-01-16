@@ -335,15 +335,13 @@ def pp(mode='MTS', mod=None):
         print 'whose extension is ', extension
         print 'Current directory is ', os.getcwd()
         print '*********************************\n'
-        pass
     ## 
 
     ## files to be read
     for i in range(len(files)):
         print files[i]
-        pass
     ##
-    
+
     if len(files) > 0:
         print '\n*******************'
         print 'Intrinsic functions'
@@ -368,9 +366,6 @@ def pp(mode='MTS', mod=None):
                 print 'be causeful with the unit in the file'
                 raw_input('please press the enter')
                 coef = 1.
-                pass
-            pass
-        pass
 
     for i in range(len(files)):
         if mode.upper()=='NIST':
@@ -443,6 +438,7 @@ def mts_column_post_process(
     Dependents
     ==========
     matplotlib.pyplot as plt, os, scipy.integrate as integrate
+    np.concatenate, __windowed_rate_values__
     """
     import matplotlib.pyplot as plt
     import os
@@ -577,58 +573,19 @@ def mts_column_post_process(
         sig=S, sig_engi=engs, te=E_t, we=E_w,
         time=time, E_pl=E_pl, delt = delt, wrk = wrk)
 
-    # for i in range(len(E_pl)-1):
-    #     try: wrk[i]
-    #     except IndexError: pass
-    #     else:
-    #         if i-delt > 1:
-    #             if i+delt < int(len(time)- 2):
-    #                 try: sr = __slope__(
-    #                     x=time[i-delt:i+delt],
-    #                     y=E_pl[i-delt:i+delt])
-    #                 except TypeError:
-    #                     print 'i=', i
-    #                     print 'delt=',delt
-    #                     print 'i-delt=', i-delt
-    #                     print 'i+delt=', i+delt
-    #                     print 'time[0:3]=',time[0:3]
-    #                     print 'E_pl[0:3]=',E_pl[0:3]
-    #                     raw_input()
-    #                     print time[i-delt:i+delt]
-    #                     print E_pl[i-delt:i+delt]
-    #                 hr = __slope__(x=E_l[i-delt:i+delt],
-    #                                y=S[i-delt:i+delt])
-    #                 Rv = __slope__(x=E_t[i-delt:i+delt],
-    #                                y=E_w[i-delt:i+delt]) #E_w[i]/E_t[i]
-    #                 er_t = __slope__(x=time[i-delt:i+delt],
-    #                                  y=E_t[i-delt:i+delt])
-    #                 er_w = __slope__(x=time[i-delt:i+delt],
-    #                                  y=E_w[i-delt:i+delt])
-    #             else: sr, hr, Rv, er_t, er_w = 0., 0., 0., 0., 0.
-    #         else: sr, hr, Rv, er_t, er_w = 0., 0., 0., 0., 0.
-
-    #         ## strain, e_pl, stress, plastic_work, time, pl-SR, dsig/dEps, 'R-values',
-    #         ## EngiStress, E_pl_trans, ER_pl_Trans
-    #         fout.write('%13.6e %13.6e %13.6e %13.6e %13.6e'%(
-    #                 E_l[i], E_pl[i], S[i], wrk[i], time[i]))
-    #         if any([sr,hr][i]==0. for i in range(2)):
-    #             fout.writelines(' %13s %13s %13s'%('NA','NA','NA'))
-    #         else: fout.write(' %13.6e %13.6e %13.6e'%(sr, hr, Rv))
-    #         fout.write(' %13.6e %13.6e %13.6e\n'%(engs[i],E_w[i], er_w)
-    #                    ) #engi stress, E_pl_wdith, Strain Rate_w
-    #         #fout.write(' %13.6e %13.6e %13.6e\n'%(engs[i],E_w[i], er_t))
-
-    fig = plt.figure(1)
-    ax = fig.add_subplot(111)
-    ax.plot(E_l,S)
-    plt.xlim(0,max(E_l)*1.1)    
-    fig = plt.figure(2)
-    ax2 = fig.add_subplot(111)
-    ax2.plot(E_l, R)
-    ax2.set
-    plt.ylim(0,max(R)*1.1)
-    plt.xlim(0,max(E_l)*1.1)
-    fout.close()
+    ##  ##
+    
+    # fig = plt.figure(1)
+    # ax = fig.add_subplot(111)
+    # ax.plot(E_l,S)
+    # plt.xlim(0,max(E_l)*1.1)    
+    # fig = plt.figure(2)
+    # ax2 = fig.add_subplot(111)
+    # ax2.plot(E_l, R)
+    # ax2.set
+    # plt.ylim(0,max(R)*1.1)
+    # plt.xlim(0,max(E_l)*1.1)
+    # fout.close()
     print 'the figure is saved to %s'%'temp_mst_colpp.pdf'
     fig.savefig('temp_mst_colpp.pdf')
     pass # end of def mts_column_post_process
