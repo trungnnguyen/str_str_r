@@ -587,14 +587,34 @@ def mts_column_post_process(
 
 def __uniform_strain_range__(
     force,
+    engineering_stress,
+    true_stress,
+    true_strain,
     ):
     """
     Provide the trim_index based on the relevant
     judgement upon the stress-strain curve.
     """
-    ## simply picking up the maximum force
-    maxind = np.where(max(force)==force)[0][0]
-    return maxind
+
+    # judegement 1
+    lower_window = 0.05; upper_window=0.10    
+    """
+    polynomial fitting of hardening rate
+    sig = A eps^n
+    ln(sig) = n ln(eps) + ln(A)
+    -> y = nx + a
+    
+    In addition, hardening rate will be:
+    -> d(sig) = A * n eps**(n-1)* d(eps)
+    dsig/deps =  A * n eps**(n-1)
+
+    ** True stress-strain fitting
+       1) sigp     : fitted stress
+       2) hrp      : hrp = dsig/deps = A * n * strain ** (n-1)
+       3) A        : The coefficient A
+       4) exponent : The exponent n
+    """    
+    return trim_index
     
 
 def nist_inplane(
@@ -1423,7 +1443,6 @@ def nist_column_post_process(
       matplotlib.pyplot as plt, os, numpy as np,
       __nist__triangle_strip__, scipy.integrate as integrate,
       __windowed_rate_values__, polynomial_fitting,
-      __uniform_strain_range__
 
     Returns
     =======
@@ -1570,14 +1589,10 @@ def nist_column_post_process(
             label=r'$d\sigma/d\varepsilon$',     mfc='None')
     ax.plot(engie[::10], HRENGI[::10],   'd',
             label=r'$d\sigma^{engi}/d\epsilon$', mfc='None')
-    leg = ax.legend(loc='lower right', fancybox=True)
-    leg.get_frame().set_alpha(0.5)
     ax.set_xlim(0.,)
 
     ## Determination of uniform strain range starts here. #
-    maxind = __uniform_strain_range__(force)
-
-    # maximum point mark with red big circle.
+    # maximum point 
     ax.plot(le[maxind], sig[maxind], 'o',
             ms=25, mec='red', mfc='None', alpha=0.5,
             markeredgewidth=5)
@@ -1586,29 +1601,32 @@ def nist_column_post_process(
             markeredgewidth=5)
     ax.set_xlabel(r'$\varepsilon$')
     ax.set_ylabel(r'$\sigma$')
+    #ax.legend(loc='lower center')
     ylimh = max(sig)* 1.2
     ax.set_ylim(0., ylimh)    
     fig.savefig('%s_sig_hr.pdf'%datafile.split('.csv')[0])
     fig.clf()
+
     ### Determination of uniform strain ends here.
+    ####################################################
 
     if echo:
-        print 'maximum_index', maxind
-        print 'estimated uniform strain: %5.2f'%le[maxind]
+        print 'trim_index', trim_index
+        print 'estimated uniform strain: %5.2f'%le[trim_index]
         pass
 
     ## trimming all variables have been obtined above.
-    le = le[:maxind]
-    we = we[:maxind]
-    te = te[:maxind]
-    R = R[:maxind]
-    SR = SR[:maxind]
-    HR = HR[:maxind]
-    E_pl = E_pl[:maxind]
-    sig = sig[:maxind]
-    sig_engi = sig_engi[:maxind]
-    wrk = wrk[:maxind]
-    time = time[:maxind]
+    le = le[:trim_index]
+    we = we[:trim_index]
+    te = te[:trim_index]
+    R = R[:trim_index]
+    SR = SR[:trim_index]
+    HR = HR[:trim_index]
+    E_pl = E_pl[:trim_index]
+    sig = sig[:trim_index]
+    sig_engi = sig_engi[:trim_index]
+    wrk = wrk[:trim_index]
+    time = time[:trim_index]
 
     ## some more typtical figures...
     #  strain rate
