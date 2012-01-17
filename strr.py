@@ -312,11 +312,15 @@ def pp(mode='MTS', mod=None):
     ## which raw data file and where?
     path = raw_input('Path or Enter(current working directory)  >>')
     extension = raw_input('Extension (e.g. txt or csv .. etc)  >>')
-    if len(path) == 0: path = os.getcwd()
-    else:
-        path = os.getcwd()+os.sep+path
-        # oldpath = os.getcwd()
-        # os.chdir(path)
+
+
+    if mode.upper()=='MTS':
+        if len(path)==0: path = os.getcwd()
+        else: path = os.getcwd() + os.sep + path
+    elif mode.upper()=='NIST':
+        if len(path)==0: path = ''
+    else: raise IOError, 'unexpected mode.'
+
     try: extension.split('.')[1]
     except:
         ## files : list of input raw data files
@@ -326,9 +330,9 @@ def pp(mode='MTS', mod=None):
                 '%s%s*.TXT'%(path, os.sep)) + glob.glob(
                     '%s%s*.CSV'%(path, os.sep))
         else: files = glob.glob('%s%s*.%s'%(path, os.sep, extension))
-    else:
-        files = [extension]
-        pass
+    else: files = [extension]
+    
+    
     if len(files) == 0:
         print '\n*********************************'
         print 'No files in the current directory'
@@ -337,15 +341,16 @@ def pp(mode='MTS', mod=None):
         print '*********************************\n'
     ## 
 
-    ## files to be read
+    ## files to be read ----------------------
+    print '\nFiles to be read as below: '
     for i in range(len(files)):
         print files[i]
-    ##
+    for i in range(len(files[i])/2): print '-',
+    print '\n'
+    ## ---------------------------------------
 
     if len(files) > 0:
-        print '\n*******************'
-        print 'Intrinsic functions'
-        print '*******************\n'
+        ## Whether or not to use 'strr.inp'
         iinp = raw_input(" Use 'strr.inp' (y or n)  >> ")
         if iinp == 'y': ifile = True
         else : ifile = False
@@ -354,32 +359,53 @@ def pp(mode='MTS', mod=None):
         t, L0, W0, area, ls, us, delt, ifor_str, unit = param(
             ifile = ifile,  mode=mode)
 
+        ## column position determination
+        ## print the first files of the series
+        ## to show how the file is formatted.
+        print '\n\n##############################################'
+        print 'One of the files is shown to check the columns'
+        print '\n\n filename: %s'%files[0]
+        with open(files[0]) as myfile:
+            for i in range(5):
+                print myfile.next(),
+        print '##############################################\n\n'
+
+        itime, iext, ifor, iwid, switch = column(ifile=ifile)
+        delimt = delimiter()
+        ##
         if mode.upper()=='NIST': pass #skip
-        else:
-            ## column position determination
-            itime, iext, ifor, iwid, switch = column(ifile=ifile)
-            delimt = delimiter()
-            ## 
+        elif mode.upper()=='MTS':
             if unit=='kN': coef = 1.
             elif unit=='N': coef = 1e-3
             else:
-                print 'be causeful with the unit in the file'
+                print 'be careful when dealing with the unit'
                 raw_input('please press the enter')
                 coef = 1.
+        else:
+            # Think twice when you eventually erase this block
+            raise IOError
 
     for i in range(len(files)):
         if mode.upper()=='NIST':
+            #-----------------------------------------------#
+            # when W0 and t are given,
+            # they over-ride the ones in the raw data files.
             nist_column_post_process(
                 datafile=files[i],
-                t=t, L0=L0, W0=W0,
-                area=area, ls = ls,
-                us=us, delt=delt, ifor_str=ifor_str, unit=unit,
-                path=path, delimt = delimt,
-                itime=itime, iext=iext, ifor=ifor,
-                iwid=iwid, switch=switch, coef=coef,
-                modulus=mod
+                #t=t, W0=W0,
+                area=area, ls=ls, us=us, delt=delt, 
+                delimt=delimt, #ifor_str=ifor_str, unit=unit,
+                #path=path, 
+                #itime=itime, iext=iext, #ifor=ifor,
+                #iwid=iwid, switch=switch, #coef=coef,
+                modulus=mod, nhead=3,
+                ifig=54, echo=False, lowe=0.05, upe=0.15,
+                __figdir__='figs'
                 )
+            #-----------------------------------------------#
         else:
+            #-----------------------------------------------#
+            #
             mts_column_post_process(
                 datafile=files[i],
                 t=t, L0=L0,
@@ -391,6 +417,7 @@ def pp(mode='MTS', mod=None):
                 iwid=iwid, switch=switch, coef=coef,
                 mod=mod
                 )
+            #-----------------------------------------------#
     pass # end of def pp
 
 def mts_column_post_process(
@@ -1509,7 +1536,6 @@ def nist_column_post_process(
     if not(os.path.isdir(__figdir__)):
         print'%s does not exist, thus is made now.'%__figdir__
         os.mkdir(__figdir__)
-        pass
 
     plt.ioff()
     path = os.getcwd()
@@ -1528,7 +1554,8 @@ def nist_column_post_process(
         raise IOError, datafile
 
     data = np.loadtxt(
-        path+os.sep+datafile, skiprows=nhead, delimiter=delimt)
+        path + os.sep + datafile, skiprows=nhead,
+        delimiter=delimt)
     data = data.T
 
     ### 
@@ -1557,7 +1584,7 @@ def nist_column_post_process(
     w_disp = w_disp[initial_index:]
     ## removal of triangle ends. ---------------------------------#
 
-    # Again, following Adam Creuziger, --------------------------
+    # Again, following Adam Creuziger, ---------------------------#
     # the gauge length and the transverse width are finely tuned.
     L0 = ldisp0 + lbar
     W0 = wdisp0 + wbar
@@ -1622,7 +1649,7 @@ def nist_column_post_process(
     # 1) R-value 2) Strain rate 3) Hardening rate 4) engineering HR
     # through __windowed_rate_values__
     fout = open(
-        path+os.sep + datafile.split('.')[0] + '.str',
+        path + os.sep + datafile.split('.')[0] + '.str',
         'w')
     # R-value, strain rate, hardeing rate, engineering hardening rate
     R, SR, HR, HRENGI = __windowed_rate_values__(
