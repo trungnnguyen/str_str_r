@@ -1,3 +1,7 @@
 r0 : 1.0
 r45: 0.5
 r90: 1.5
+
+tension_R10~tension_R12: 2.0
+tension_R13~tension_R15: 1.1
+tension_R16~tension_R19: 0.6
