@@ -585,6 +585,18 @@ def mts_column_post_process(
     fig.savefig('temp_mst_colpp.pdf')
     pass # end of def mts_column_post_process
 
+def __uniform_strain_range__(
+    force,
+    ):
+    """
+    Provide the trim_index based on the relevant
+    judgement upon the stress-strain curve.
+    """
+    ## simply picking up the maximum force
+    maxind = np.where(max(force)==force)[0][0]
+    return maxind
+    
+
 def nist_inplane(
     path=None,
     ext='*.csv', ifig=92, order=3,
@@ -1411,6 +1423,7 @@ def nist_column_post_process(
       matplotlib.pyplot as plt, os, numpy as np,
       __nist__triangle_strip__, scipy.integrate as integrate,
       __windowed_rate_values__, polynomial_fitting,
+      __uniform_strain_range__
 
     Returns
     =======
@@ -1557,100 +1570,14 @@ def nist_column_post_process(
             label=r'$d\sigma/d\varepsilon$',     mfc='None')
     ax.plot(engie[::10], HRENGI[::10],   'd',
             label=r'$d\sigma^{engi}/d\epsilon$', mfc='None')
+    leg = ax.legend(loc='lower right', fancybox=True)
+    leg.get_frame().set_alpha(0.5)
     ax.set_xlim(0.,)
 
     ## Determination of uniform strain range starts here. #
+    maxind = __uniform_strain_range__(force)
 
-    """
-    polynomial fitting of hardening rate
-    sig = A eps^n
-    ln(sig) = n ln(eps) + ln(A)
-    -> y = nx + a
-    
-    In addition, hardening rate will be:
-    -> d(sig) = A * n eps**(n-1)* d(eps)
-    dsig/deps =  A * n eps**(n-1)
-    """
-    lower_window = 0.05; upper_window=0.10
-    """
-    ** True stress-strain fitting
-       1) sigp     : fitted stress
-       2) hrp      : hrp = dsig/deps = A * n * strain ** (n-1)
-       3) A        : The coefficient A
-       4) exponent : The exponent n
-    """
-    sigp, hrp, A, exponent = polynomial_fitting(
-        strain=le.copy(), stress=sig.copy(),
-        lower_window=lower_window,
-        upper_window=upper_window
-        )
-
-    ## find where dsig/deps (= hrp) = sig[?]
-    ## fit the True flow curve
-    trim_index= 2500
-    for i in range(len(hrp)):
-        if hrp[i]<sig[i]:
-            trim_index=i
-            if echo:
-                print 'strain up to %5.2f'%le[i]
-            break
-    ## --------------------------------------------------
-    ax.plot(le[::10], sigp[::10], '--',
-            label=r'$A\varepsilon^n$', mfc='None')
-    ax.plot(le[::10],  hrp[::10], '--',
-            label=r'$A n \varepsilon^{n-1}$')
-
-    ## engineering stress- engineering strain fitting
-    sigp, hrp, A, exponent = polynomial_fitting(
-        strain=engie.copy(), stress=sig_engi.copy(),
-        lower_window=lower_window,
-        upper_window=upper_window,
-        )
-
-    ax.plot(engie[::10], sigp[::10], '-.',
-            label=r'$A\epsilon^n$ ', mfc='None')
-    ax.plot(engie[::10],  hrp[::10], '-.',
-            label=r'$A n \epsilon^{n-1}$')
-
-    ## direct fitting of experimenal hardening rate
-    # HR vs le
-
-    # fitting 1: d(sig)/d(eps) fitting
-    # using ln(hr) = a ln(eps) + b
-    #  --- > it does not touch the 'hr = 0' horizontal line.
-    # hrp = polynomial_fitting_hr(
-    #     hr=HR, strain=le,lower_window=0.10, upper_window=0.15)
-
-    # fitting 2: recursive polynomial fitting order = 3
-    # and returns the upper_strain limit...
-    ## --> it turns out to be very unstable.
-    ##     Sometimes it even crashes.
-    ##     So, I put in within 'try, and except' as below.
-    try:
-        hrp, dum, upper_strain = polynomial_fitting_hr_recursive(
-            hr=HR, strain=le,
-            lower_window=epsl,
-            upper_window=epsu,# upper_window is recursively updated
-            order=order
-            )
-        hr_fitted = hrp(le)
-        ax.plot(
-            le[::10], hr_fitted[::10], '-o',
-            label=r'recursive 3rd polynomial fitting')
-    except: pass
-    ## fitting 2 ends
-
-    ## 3rd method and the comparatively reliable method
-    ## -> simply picking up the maximum force
-    maxind = np.where(max(sig_engi)==sig_engi)[0][0]
-    if echo==True:
-        print '\nMax engineering stress: %5.2f at index: %i\n'%(
-            sig_engi[maxind], maxind)
-        print 'Strain: %5.2f\n'%engie[maxind]
-        print maxind
-    trim_index = maxind
-
-    # maximum point 
+    # maximum point mark with red big circle.
     ax.plot(le[maxind], sig[maxind], 'o',
             ms=25, mec='red', mfc='None', alpha=0.5,
             markeredgewidth=5)
@@ -1659,32 +1586,29 @@ def nist_column_post_process(
             markeredgewidth=5)
     ax.set_xlabel(r'$\varepsilon$')
     ax.set_ylabel(r'$\sigma$')
-    #ax.legend(loc='lower center')
     ylimh = max(sig)* 1.2
     ax.set_ylim(0., ylimh)    
     fig.savefig('%s_sig_hr.pdf'%datafile.split('.csv')[0])
     fig.clf()
-
     ### Determination of uniform strain ends here.
-    ####################################################
 
     if echo:
-        print 'trim_index', trim_index
-        print 'estimated uniform strain: %5.2f'%le[trim_index]
+        print 'maximum_index', maxind
+        print 'estimated uniform strain: %5.2f'%le[maxind]
         pass
 
     ## trimming all variables have been obtined above.
-    le = le[:trim_index]
-    we = we[:trim_index]
-    te = te[:trim_index]
-    R = R[:trim_index]
-    SR = SR[:trim_index]
-    HR = HR[:trim_index]
-    E_pl = E_pl[:trim_index]
-    sig = sig[:trim_index]
-    sig_engi = sig_engi[:trim_index]
-    wrk = wrk[:trim_index]
-    time = time[:trim_index]
+    le = le[:maxind]
+    we = we[:maxind]
+    te = te[:maxind]
+    R = R[:maxind]
+    SR = SR[:maxind]
+    HR = HR[:maxind]
+    E_pl = E_pl[:maxind]
+    sig = sig[:maxind]
+    sig_engi = sig_engi[:maxind]
+    wrk = wrk[:maxind]
+    time = time[:maxind]
 
     ## some more typtical figures...
     #  strain rate
