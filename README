@@ -6,7 +6,7 @@ Uniaxial Tensile Test Analyzer
   Therefore, the experimental data can be subjective to the experimentalist who analyzes the data.    
  
  2. Cautions
-  2-1. File names should be 'A_B_C.csv' such that each corresponds to label, angle (3digits) and duplication number, respectively. For example, 'Asteel_045_3.csv' is the third sample tensiled along 45 degree from RD of Asteel.
+  2-1. For a certain usage, the file name should be 'A_B_C.csv' such that each corresponds to label, angle (3digits) and duplication number, respectively. For example, 'Asteel_045_3.csv' is the third sample tensiled along 45 degree from RD of Asteel. This is a mandate if one wants to systematically analyze data set along a certain set of the in-plane directions from which the sample is cut off. In other word, if one wants to do a study with in-plane variation of certain physical terms, e.g., yield stress, r-value and so on, it is a good practice to strictly maintain such file name convention.
   2-2. If one wants to analyze a series of files, the incremental angle is decided to be angles[1] - angles[0].
 
  3. Manual
