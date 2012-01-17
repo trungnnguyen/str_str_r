@@ -1,0 +1,13 @@
+Uniaxial Tensile Test Analyzer
+==============================
+ 1. Introduction
+  Uniaxial tensile test is one of the most widely conducted mechanical test for sheet metals.
+  While the standard geometry of the tensile sample bar is widely accepted, it is difficult to find a consensus for post-analyzing method on the experimental data.
+  Therefore, the experimental data can be subjective to the experimentalist who analyzes the data.    
+ 
+ 2. Cautions
+  2-1. File names should be 'A_B_C.csv' such that each corresponds to label, angle (3digits) and duplication number, respectively. For example, 'Asteel_045_3.csv' is the third sample tensiled along 45 degree from RD of Asteel.
+  2-2. If one wants to analyze a series of files, the incremental angle is decided to be angles[1] - angles[0].
+
+ 3. Manual
+  Manual is very limited since I cannot afford to spending more time on documenting. It is written in HTML, thus embedding an Equation is not an easy task. However, manual should be self-explantory so that an end-user can use this software very easily. This software is not such one that users use it on a regular basis. Instead it is expected that a user has to remind him/herself how to use it every once in a while. Therefore, using the software should be very intuitive.

@@ -1,0 +1,97 @@
+<html>
+<h1>Manual</h1>
+<h2>1. Introduction </h2>
+<p> For the issues on file format, refer to chapter 2. </p>
+<p> Currently, there are two formats available. One of which is called
+  'MTS' while the other is 'NIST'. Ths module str_str_r.py is, at first,
+  created for analyzing the raw data files from the MTS system at GIFT.
+  Later on, to cope with the raw file for the raw data files from NIST,
+  mode 'NIST' was added. During the stay at NIST, the incremental angle
+  for in-plane tensile bar decided to be 15 degree, which eventually led to
+  far more number of files for one kind of material. Therefore, a different
+  way of post-processing the data was necessary. On the other hand, the
+  forcus was on the the in-plane variations of the r-value and the yield
+  stress. Therefore, some additional features were necessary to look at
+  such features more intensely and, at the same time, succintly. Error
+  bar was also necessary to see how experimental scatter is like, which
+  provide a systematic view on the aspects of both experiments and and
+  modeling.
+</p>
+
+<p> File format: Either the csv from the NIST, or MTS files.
+  In the NIST case, def nist_inplane can be used. </p>
+<p><b> NIST mode example</b></p>
+<p><i> <!-- Below is an example -->
+    >>> from strr import nist_inplane as ni <br />
+    >>> ni(ext ='*.csv', ifig=92, order=3, epsl=0.05,
+    epsu=0.10, delt=20) <br />
+</i></p>
+<p><b> MTS mode example</b></p>
+<p><i> <!-- Below is an example -->
+    >>> from strr import pp <br />
+    >>> pp(mode='mts') <br />
+    >>> 
+</i></p>
+
+<h2>2. Prerequisites </h2>
+
+<h3>2-1. Raw data file format</h3>
+
+<h4> NIST </h4>
+<p> First of all, the raw data file name should be stricly given as
+  follows. The basic format of should be 'a_b_c.csv'. Each of the three
+  a, b and c regions should be the material label, the three digits
+  angle along which the sample is cut-off of, and the duplicate number,
+  respectively. </p>
+<p> NIST mode is assumed to have three lines of header. Example header
+  as below: </p>
+<p><font color='blue'> Time,Extension,Load,Displacement (Strain 1),
+  Displacement (Strain 2) <br />
+  (sec),(mm),(N),(mm),(mm) <br />
+  12.6, 1.2 <br /> . <br /> . <br /> . <br />
+</font></p>
+<p> The last row contains two numbers, each of which contains the width
+  and the thickness,  respectively. </p>
+<p> It is assumed that the raw data file contains the time record, axial
+  extension, load, and width displacement change. Both the axial extension
+  and the width extension are assumed to be travel length so thus positive.</p>
+
+<h5> MTS </h4>
+<p> MTS mode names after the MTS system at GIFT. </p>
+
+<h2>3. Important Modules</h2>
+<p>  </p>
+
+<h2>4. Usage in details </h2>
+
+<h3>4.1 On a single file </h3>
+<p> We can produce a bunch of data from a single raw data file.  </p>
+
+<h3>4.2 On a single set of duplicates </h3>
+<p> Often times one conducts two or more duplicates of the sample in order to
+see how reliable the data is and to obtain the exprimental scatter. In such
+a case, one may want to analyze the mean values of the duplicates together with
+errorbar. </p>
+
+<h3>4.3 On a series of files </h3>
+
+<h2>5. Outputs </h2>
+<h3>5.1 Figures </h3>
+
+<!-- Table for the figures -->
+<table border='1'>
+  <tr>
+    <td>Names</td>
+    <td>Role</td>
+    <td>Definition</td>
+  </tr>
+  <tr>
+    <td>figR15a</td>
+    <td>R value at 15 %</td>
+    <td>\varepsilon_w / \varepsilon_t at \varepsilon_l = upe (def given to nist_column_post_process)</td>
+  </tr>
+</table>
+  
+<h3>5.2 Analyzed Data </h3>
+<p> </p>
+</html>
