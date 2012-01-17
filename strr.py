@@ -430,11 +430,11 @@ def mts_column_post_process(
 
     Variables
     =========
-    E_l : logarithmic axial strain
+    E_l    : logarithmic axial strain
     E_engi : engineering axial strain
-    engiw: Engineering width strain
-    
-    
+    engiw  : Engineering width strain
+    wrk    : Plastic work
+
     Dependents
     ==========
     matplotlib.pyplot as plt, os, scipy.integrate as integrate
@@ -454,7 +454,7 @@ def mts_column_post_process(
         print 'Type the acqusition frequency'
         acqf = raw_input('[Hz = /time] >>>')
         acqf = float(acqf)
-        
+
     print 'filename = ', datafile # raw data file name
 
     f = open(datafile, 'r')
@@ -500,8 +500,7 @@ def mts_column_post_process(
     for j in range(len(lines)):
         try:
             cline = map(float,lines[j].split(delimt))
-        except ValueError, IndexError:
-            pass
+        except ValueError, IndexError: pass
         else:
             ext = cline[iext]
             force = cline[ifor]
@@ -518,7 +517,7 @@ def mts_column_post_process(
                 engie = ext
             E_l.append(el)
             E_engi.append(engie)
-            
+
             ## 
             engiw = - chg_wid / W0 #negative width strain
             ew = math.log(1 + engiw) #convert into true strain
@@ -573,8 +572,19 @@ def mts_column_post_process(
         sig=S, sig_engi=engs, te=E_t, we=E_w,
         time=time, E_pl=E_pl, delt = delt, wrk = wrk)
 
-    ##  ##
-    
+    ## Trimming data within the uniform strain range ##
+
+    # Input engineering stress instead of force in this case.
+    maxind = __uniform_strain_range__(force=engs)
+    S      = S[:maxind]
+    E_l    = E_l[:maxind]
+    E_engi  = E_engi[:maxind]
+    wrk    = wrk[:maxind]
+    R      = R[:maxind]
+    SR     = SR[:maxind]
+    HR     = HR[:maxind]
+    time   = time[:maxind]
+
     # fig = plt.figure(1)
     # ax = fig.add_subplot(111)
     # ax.plot(E_l,S)
@@ -586,8 +596,41 @@ def mts_column_post_process(
     # plt.ylim(0,max(R)*1.1)
     # plt.xlim(0,max(E_l)*1.1)
     # fout.close()
-    print 'the figure is saved to %s'%'temp_mst_colpp.pdf'
-    fig.savefig('temp_mst_colpp.pdf')
+    # print 'the figure is saved to %s'%'temp_mst_colpp.pdf'
+    # fig.savefig('temp_mst_colpp.pdf')
+
+    filename = datafile.split('.')[0]
+    plt.ioff() #interactive off
+
+    ## stress-strain curve
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(E_l, S, label='Logarithmic stress and strain curve')
+    ax.set_xlabel(r'$\varepsilon$', dict(fontsize=20))
+    ax.set_ylabel(r'$\sigma$ [MPa]', dict(fontsize=20))
+    fig.savefig('%s_sigeps.pdf'%filename)
+    fig.savefig('%s_sigeps.eps'%filename)
+    ax.set_ylim(0., (int(max(S)/100)+1)*100)
+
+    ax.plot(E_l, HR, label=r'Hardening rate')
+    ax.set_ylabel(r'$d\sigma/d\varepsilon [MPa]$', dict(fontsize=20))
+    ax.set_ylim(0., (int(max(S)/100)+1)*100)
+    fig.savefig('%s_HR_sigeps.pdf'%filename)
+    fig.savefig('%s_HR_sigeps.eps'%filename)
+
+    fig.clf()
+
+    ## R-value stress
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(E_l, R, label='R-value')
+    ax.set_xlabel(r'$\varepsilon$', dict(fontsize=20))
+    ax.set_ylabel('R-value', dict(fontsize=20))
+    fig.savefig('%s_Reps.pdf'%filename)
+    fig.savefig('%s_Reps.eps'%filename)
+
+    fig.clf()
+
     pass # end of def mts_column_post_process
 
 def __uniform_strain_range__(
@@ -596,7 +639,19 @@ def __uniform_strain_range__(
     """
     Provide the trim_index based on the relevant
     judgement upon the stress-strain curve.
+
+    Arguments
+    =========
+    force   : Either force or engineering stress
+
+    Dependents
+    ==========
+    numpy as np,
+    
     """
+    import numpy as np
+    if type(force).__name__=='list':
+        force = np.array(force)
     ## simply picking up the maximum force
     maxind = np.where(max(force)==force)[0][0]
     return maxind
@@ -1650,8 +1705,7 @@ def nist_column_post_process(
     ax.set_ylabel(r'$d\sigma/d\varepsilon^{tot}$ [MPa]', dict(fontsize=20))
     ax.legend(loc='best')
     fig.savefig('%s%sstr-HR_%s.pdf'%(
-            __figdir__, os.sep, datafile.replace('/','_').split('.')[0])
-                )
+            __figdir__, os.sep, datafile.replace('/','_').split('.')[0]))
 
     #------------------------------------------------------------------
     # typical one value parameter calculation
@@ -1698,7 +1752,7 @@ def nist_column_post_process(
 
     #FlowStress_lowe: Flow stress at the given lowe strain
     y0 = sig[lind0]; y1 = sig[lind1]
-    FlowStress_lowe = (y1 - y0) / (x1 - x0) * (lowe-x0) + y0
+    FlowStress_lowe = (y1 - y0) / (x1 - x0) * (lowe - x0) + y0
 
     #R_upe : R value at the given upe strain
     uind0 = uind; uind1 = uind + 1
