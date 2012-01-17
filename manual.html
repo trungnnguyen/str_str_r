@@ -18,8 +18,8 @@
   modeling.
 </p>
 
-<p> File format: Either the csv from the NIST, or MTS files.
-  In the NIST case, def nist_inplane can be used. </p>
+<p> File format: Either the csv from the NIST, or MTS files.</p>
+
 <p><b> NIST mode example</b></p>
 <p><i> <!-- Below is an example -->
     >>> from strr import nist_inplane as ni <br />
@@ -30,7 +30,6 @@
 <p><i> <!-- Below is an example -->
     >>> from strr import pp <br />
     >>> pp(mode='mts') <br />
-    >>> 
 </i></p>
 
 <h2>2. Prerequisites </h2>
@@ -57,7 +56,7 @@
   and the width extension are assumed to be travel length so thus positive.</p>
 
 <h5> MTS </h4>
-<p> MTS mode names after the MTS system at GIFT. </p>
+<p> The mode, MTS, names after the MTS system at GIFT. MTS mode requires either axial strain(i.e. engineering strain) or axial displacement. It also needs either force or engineering stress. The width extension is a necessity to calculate R-value. Time is not a prerequisite but in such a case, one has to input the data acquisition rate. </p>
 
 <h2>3. Important Modules</h2>
 <p>  </p>

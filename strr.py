@@ -90,7 +90,7 @@ def param(ifile=False, filename='strr.inp', mode=None):
     if mode!=None and type(mode).__name__=='str':
         print '*** %s mode ***'%mode
 
-    if ifile ==False:
+    if ifile==False:
         ## thickness
         t = raw_input('Thickness of the sample, (default = 0.42) >>')
         ## Gauge length
@@ -156,6 +156,7 @@ def param(ifile=False, filename='strr.inp', mode=None):
         f.close()
         ##     t,     L0,    W0,    area,         ls,   ,us,    delt,  ifort_str, unit
         return tmp[0],tmp[1],tmp[2],tmp[0]*tmp[2],tmp[3],tmp[4],tmp[5],tmp[6],    tmp[7]
+    else: raise IOError, 'Unexpected case.'
     pass # End of def param
 
 def column(ifile=False, filename='strr.inp'):
@@ -782,7 +783,7 @@ def nist_inplane(
         temp = int(files[i].split('_')[1])
         if temp in angles: pass
         else: angles.append(temp)
-        pass
+
     angles.sort() # sorting angle
 
     #mapping... into integers.
