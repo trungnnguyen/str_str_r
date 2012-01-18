@@ -1,7 +1,6 @@
 """
 in-plane variations of selected physical entities
 """
-
 def inpv(
     path=None, ext='*.csv', ifig=92, order=3,
     epsl=0.05, epsu=0.10, delt=10, mod=None,
@@ -71,7 +70,9 @@ def inpv(
 
     Dependents
     ==========
-      os, glob, matplotlib.pyplot as plt, nist_column_post_process
+      os, glob, matplotlib.pyplot as plt,
+      nist_column_post_process
+      mts_column_post_process
 
     Outputs
     =======
@@ -87,6 +88,7 @@ def inpv(
     """
     import os, glob
     import matplotlib.pyplot as plt
+    from strr import nist_column_post_process, mts_column_post_process
 
     # subject files whose extension is given as 'ext'
     if path==None: files = glob.glob(ext)
@@ -314,7 +316,6 @@ def inpv(
                     angles[i]+ang_off,R_UPE, fmt='+',
                     yerr=np.std(r_upel), color='green')
             ## ------------------------------------------------------#
-            
 
             axIRS.errorbar(
                 angles[i],IRSLOP,fmt='+',yerr=np.std(InstRslopel),
@@ -332,13 +333,12 @@ def inpv(
             ys2_err.append(np.std(ys2))
             ysl_err.append(np.std(siglowel))
             ysu_err.append(np.std(sigupel))
-            pass
         else:
             #axR15.plot( angles[i],R15,'+',    color='red')
             axR15a.plot( angles[i],R15A,'+',   color='red')
 
             # Instantaneous R-value -----------------------------#
-            axIR.plot(  angles[i],IR,'+',     color='red')
+            axIR.plot( angles[i],IR,'+',     color='red')
             axIR.plot( angles[i]-ang_off, R_LOWE, color='blue')
             axIR.plot( angles[i]+ang_off, R_UPE,  color='green')
             #----------------------------------------------------#
@@ -350,15 +350,12 @@ def inpv(
             ys2_err.append(np.NAN)            
             ysl_err.append(np.NAN)
             ysu_err.append(np.NAN)
-            pass
-        pass
 
     ## ticks
     d = abs(angles[1]-angles[0])
     ang0 = min(angles) - d
     if max(angles)>=90.:# -->more than 90 degree
         ang1 = max(angles) + 2 * d
-        pass
     else: ang1 = max(angles) + d
     if max(angles)>=090.: fin = max(angles) + d
     else: fin = max(angles)    
@@ -384,7 +381,8 @@ def inpv(
         angles + 1.5*d/8., ysu_mast/ysun,
         yerr=ysu_err/ysun, fmt='o', label=r'$\bar{\sigma^{YS}}_u$')
 
-    axYSn.legend(loc='best')
+    leg = axYSn.legend(loc='best', fancybox=True)
+    leg.get_frame().set_alpha(0.5)
     axYSn.set_xlim(ang0, ang1)
     axYSn.set_xticks(np.arange(0, fin*1.01, 30.))
     figYSn.savefig('YS_norm.pdf')
@@ -399,15 +397,15 @@ def inpv(
     axYS2.set_xlim(ang0,  ang1)
 
     #axR15.set_xticks(np.arange(0,max(angles)*1.01,30.))
-    axR15a.set_xticks(np.arange(0, fin*1.01, 30.))
-    axIR.set_xticks(np.arange(0, fin*1.01, 30.))
+    axR15a.set_xticks(np.arange(0,fin*1.01, 30.))
+    axIR.set_xticks(np.arange(0,  fin*1.01, 30.))
     axIRS.set_xticks(np.arange(0, fin*1.01, 30.))
     axYS1.set_xticks(np.arange(0, fin*1.01, 30.))
     axYS2.set_xticks(np.arange(0, fin*1.01, 30.))
 
     #axR15.set_ylabel('R15')
-    axR15a.set_ylabel('R15a',dict(fontsize=20))
-    axIR.set_ylabel(r'$\bar{R}^{inst}$',dict(fontsize=20))
+    axR15a.set_ylabel('R15a', dict(fontsize=20))
+    axIR.set_ylabel(r'$\bar{R}^{inst}$', dict(fontsize=20))
     axIRS.set_ylabel(r'$\dot{R}^{inst}$', dict(fontsize=20))
     axYS1.set_ylabel(r'$\sigma^{YS}$ offset from $\varepsilon^{tot}$',
                      dict(fontsize=20))
@@ -415,10 +413,10 @@ def inpv(
                      dict(fontsize=20))
 
     #axR15.set_xlabel(r'$\theta$')
-    axR15a.set_xlabel(r'$\theta$',dict(fontsize=20))
-    axIR.set_xlabel(r'$\theta$',dict(fontsize=20))
-    axYS1.set_xlabel(r'$\theta$',dict(fontsize=20))
-    axYS2.set_xlabel(r'$\theta$',dict(fontsize=20))
+    axR15a.set_xlabel(r'$\theta$', dict(fontsize=20))
+    axIR.set_xlabel(r'$\theta$', dict(fontsize=20))
+    axYS1.set_xlabel(r'$\theta$', dict(fontsize=20))
+    axYS2.set_xlabel(r'$\theta$', dict(fontsize=20))
 
     #figR15.savefig('figR15.pdf')
     figR15a.savefig('figR15a.pdf')
@@ -434,3 +432,4 @@ def inpv(
     figYS2.savefig('figYS2_rescale.pdf')
     pass
     # sorting multiple tensile bars for an angle
+
