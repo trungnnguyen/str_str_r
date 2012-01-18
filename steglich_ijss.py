@@ -71,8 +71,6 @@ def analysis(single_data, delt=100):
     R     = empty_string_trimmer(R)
     eps   = empty_string_trimmer(eps)
     sig   = empty_string_trimmer(sig)
-
-
     
     tiny = 10**-5
     mx = max(force)
@@ -132,6 +130,11 @@ def analysis(single_data, delt=100):
     return eps_pl, sig, R  #plastic strain, True Stress, R-value
     
 def comma2dot(list):
+    """
+    Some European countries use ',' instead of '.'
+    when separating subzero values from above zero ones.
+    ex.) 1.23 -> 1,23
+    """
     dum = []
     for i in range(len(list)):
         dum.append(list[i].replace(',','.'))
