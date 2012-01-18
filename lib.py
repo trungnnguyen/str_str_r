@@ -1,6 +1,13 @@
 """
 Library module
-
+slope
+__slope__
+__windowed_rate_values__
+__uniform_strain_range__
+polynomial_fitting
+polynomial_fitting_hr
+polynomial_fitting_hr_multi
+polynomial_fitting_hr_recursive
 """
 
 def slope(x, y, upy, lowy):
@@ -28,8 +35,8 @@ def slope(x, y, upy, lowy):
 
     if ind1 == ind2 :
         ind2 = ind1 + 10
-    z = np.polyfit(x[ind1:ind2],y[ind1:ind2],1)
-    
+    z = np.polyfit(x[ind1:ind2], y[ind1:ind2],1)
+
     """
     try:
         z = np.polyfit(x[ind1:ind2],y[ind1:ind2],1)
@@ -44,12 +51,13 @@ def __slope__(x, y):
     """
     Obtain the slope of y w.r.t. x
     """
+    import numpy as np
     z = np.polyfit(x,y,1)
     return z[0]
 
-
-
-def __windowed_rate_values__(fout, le, engie, sig, sig_engi, te, we, time, E_pl, delt,wrk):
+def __windowed_rate_values__(
+    fout, le, engie, sig, sig_engi, te,
+    we, time, E_pl, delt,wrk):
     """
     Calculates windowsed rate values.
 
